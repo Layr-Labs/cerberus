@@ -1,0 +1,61 @@
+# ref. https://goreleaser.com/customization/build/
+version: 2
+
+project_name: cerberus
+
+builds:
+  - id: cerberus
+    main: ./cmd/cerberus/main.go
+    binary: cerberus
+    flags:
+      - -v
+    ldflags:
+      - -X 'main.version={{ .Version }}'
+    # contains linux and darwin
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+release:
+  # Repo in which the release will be created.
+  # Default is extracted from the origin remote URL or empty if its private hosted.
+  github:
+    owner: layr-labs
+    name: cerberus
+
+  draft: true
+
+dockers:
+  - image_templates:
+      - ghcr.io/layr-labs/{{ .ProjectName }}:latest-amd64
+      - ghcr.io/layr-labs/{{ .ProjectName }}:{{.Version}}-amd64
+    use: buildx
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--build-arg=APP_VERSION={{ .Version }}"
+    goarch: amd64
+  - image_templates:
+      - ghcr.io/layr-labs/{{ .ProjectName }}:latest-arm64
+      - ghcr.io/layr-labs/{{ .ProjectName }}:{{.Version}}-arm64
+    use: buildx
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--build-arg=APP_VERSION={{ .Version }}"
+    goarch: arm64
+
+docker_manifests:
+  - name_template: ghcr.io/layr-labs/{{ .ProjectName }}:{{ .Version }}
+    image_templates:
+      - ghcr.io/layr-labs/{{ .ProjectName }}:{{ .Version }}-amd64
+      - ghcr.io/layr-labs/{{ .ProjectName }}:{{ .Version }}-arm64
+  - name_template: ghcr.io/layr-labs/{{ .ProjectName }}:latest
+    image_templates:
+      - ghcr.io/layr-labs/{{ .ProjectName }}:latest-amd64
+      - ghcr.io/layr-labs/{{ .ProjectName }}:latest-arm64
