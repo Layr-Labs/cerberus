@@ -45,8 +45,6 @@ func (s *Service) SignGeneric(
 	ctx context.Context,
 	req *v1.SignGenericRequest,
 ) (*v1.SignGenericResponse, error) {
-	observe := s.metrics.RecordRPCServerRequest("signing/SignGeneric")
-	defer observe()
 	// Take the public key and data from the request
 	pubKeyHex := common.Trim0x(req.GetPublicKey())
 	password := req.GetPassword()
@@ -56,7 +54,6 @@ func (s *Service) SignGeneric(
 		blsKey, err := s.store.RetrieveKey(ctx, pubKeyHex, password)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to retrieve key: %v", err))
-			s.metrics.RecordRPCServerResponse("signing/SignGeneric", metrics.FailureLabel)
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		s.keyCache[pubKeyHex] = blsKey
@@ -66,7 +63,6 @@ func (s *Service) SignGeneric(
 	data := req.GetData()
 	if len(data) > 32 {
 		s.logger.Error("Data is too long, must be 32 bytes")
-		s.metrics.RecordRPCServerResponse("signing/SignGeneric", metrics.FailureLabel)
 		return nil, status.Error(codes.InvalidArgument, "data is too long, must be 32 bytes")
 	}
 
@@ -75,6 +71,5 @@ func (s *Service) SignGeneric(
 	// Sign the data with the private key
 	sig := blsKey.SignMessage(byteArray)
 	s.logger.Info(fmt.Sprintf("Signed a message successfully using %s", req.PublicKey))
-	s.metrics.RecordRPCServerResponse("signing/SignGeneric", metrics.SuccessLabel)
 	return &v1.SignGenericResponse{Signature: sig.Serialize()}, nil
 }

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Layr-Labs/cerberus/internal/middleware"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -35,7 +37,8 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	registry.MustRegister(collectors.NewGoCollector())
-	rpcMetrics := metrics.NewRPCServerMetrics("remote_bls", registry)
+	rpcMetrics := metrics.NewRPCServerMetrics("cerberus", registry)
+
 	go startMetricsServer(registry, config.MetricsPort, logger)
 
 	keystore := filesystem.NewStore(config.KeystoreDir, logger)
@@ -50,6 +53,10 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 
 		opts = append(opts, grpc.Creds(creds))
 	}
+
+	// Register metrics middleware
+	metricsMiddleware := middleware.NewMetricsMiddleware(registry, rpcMetrics)
+	opts = append(opts, grpc.UnaryInterceptor(metricsMiddleware.UnaryServerInterceptor()))
 
 	s := grpc.NewServer(opts...)
 	kmsService := kms.NewService(config, keystore, logger, rpcMetrics)
