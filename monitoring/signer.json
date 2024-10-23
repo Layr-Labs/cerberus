@@ -110,7 +110,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "remote_bls_rpc_server_request_duration_seconds{method=\"signing/SignGeneric\", quantile=\"0.95\"}",
+          "expr": "cerberus_rpc_server_request_duration_seconds{quantile=\"0.95\", method=\"/signer.v1.Signer/SignGeneric\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
           "instant": false,
@@ -212,7 +212,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "rate(remote_bls_rpc_server_request_total{method=\"signing/SignGeneric\"}[$__range])",
+          "expr": "rate(cerberus_rpc_server_request_total{method=\"/signer.v1.Signer/SignGeneric\"}[$__range])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -240,6 +240,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -286,33 +287,9 @@
         },
         "overrides": [
           {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "C {__name__=\"remote_bls_rpc_server_response_total\", instance=\"localhost:9091\", job=\"prometheus\", method=\"signing/SignGeneric\", status=\"success\"}"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          },
-          {
             "matcher": {
               "id": "byName",
-              "options": "C {__name__=\"remote_bls_rpc_server_response_total\", instance=\"localhost:9091\", job=\"prometheus\", method=\"signing/SignGeneric\", status=\"success\"}"
+              "options": "C {__name__=\"cerberus_rpc_server_request_total\", code=\"OK\", instance=\"localhost:9091\", job=\"prometheus\", method=\"/signer.v1.Signer/SignGeneric\"}"
             },
             "properties": [
               {
@@ -351,10 +328,10 @@
           "disableTextWrap": false,
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "remote_bls_rpc_server_response_total{status=\"success\", method=\"signing/SignGeneric\"}",
+          "expr": "cerberus_rpc_server_request_total{method=\"/signer.v1.Signer/SignGeneric\", code=\"OK\"}",
           "fullMetaSearch": false,
           "hide": true,
-          "includeNullMetadata": true,
+          "includeNullMetadata": false,
           "instant": false,
           "legendFormat": "{{method}}",
           "range": true,
@@ -368,7 +345,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "remote_bls_rpc_server_response_total{method=\"signing/SignGeneric\"}",
+          "expr": "cerberus_rpc_server_request_total{method=\"/signer.v1.Signer/SignGeneric\"}",
           "fullMetaSearch": false,
           "hide": true,
           "includeNullMetadata": true,
@@ -401,13 +378,13 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "BLS Signer",
+  "title": "Cerberus",
   "uid": "bdzhsw9k29am8d",
-  "version": 17,
+  "version": 23,
   "weekStart": ""
 }

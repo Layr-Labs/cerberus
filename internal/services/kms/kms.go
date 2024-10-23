@@ -48,22 +48,18 @@ func (k *Service) GenerateKeyPair(
 	ctx context.Context,
 	req *v1.GenerateKeyPairRequest,
 ) (*v1.GenerateKeyPairResponse, error) {
-	observe := k.metrics.RecordRPCServerRequest("kms/GenerateKeyPair")
-	defer observe()
 	password := req.GetPassword()
 
 	// Generate a new BLS key pair
 	keyPair, err := keystore.NewKeyPair(password, mnemonic.English)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to generate BLS key pair: %v", err))
-		k.metrics.RecordRPCServerResponse("kms/GenerateKeyPair", metrics.FailureLabel)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	pubKeyHex, err := k.store.StoreKey(ctx, keyPair)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save BLS key pair to file: %v", err))
-		k.metrics.RecordRPCServerResponse("kms/GenerateKeyPair", metrics.FailureLabel)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -72,7 +68,6 @@ func (k *Service) GenerateKeyPair(
 	copy(pkBytesSlice, keyPair.PrivateKey[:])
 	privKeyHex := common.Trim0x(hex.EncodeToString(pkBytesSlice))
 
-	k.metrics.RecordRPCServerResponse("kms/GenerateKeyPair", metrics.SuccessLabel)
 	return &v1.GenerateKeyPairResponse{
 		PublicKey:  pubKeyHex,
 		PrivateKey: privKeyHex,
@@ -84,8 +79,6 @@ func (k *Service) ImportKey(
 	ctx context.Context,
 	req *v1.ImportKeyRequest,
 ) (*v1.ImportKeyResponse, error) {
-	observe := k.metrics.RecordRPCServerRequest("kms/ImportKey")
-	defer observe()
 	pkString := req.GetPrivateKey()
 	password := req.GetPassword()
 	pkMnemonic := req.GetMnemonic()
@@ -96,7 +89,6 @@ func (k *Service) ImportKey(
 		ks, err := keystore.NewKeyPairFromMnemonic(pkMnemonic, password)
 		if err != nil {
 			k.logger.Error(fmt.Sprintf("Failed to import key pair from mnemonic: %v", err))
-			k.metrics.RecordRPCServerResponse("kms/ImportKey", metrics.FailureLabel)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		pkBytes = ks.PrivateKey
@@ -111,7 +103,6 @@ func (k *Service) ImportKey(
 			pkBytes, err = hex.DecodeString(pkHex)
 			if err != nil {
 				k.logger.Error(fmt.Sprintf("Failed to import key pair from string: %v", err))
-				k.metrics.RecordRPCServerResponse("kms/ImportKey", metrics.FailureLabel)
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 		}
@@ -123,11 +114,9 @@ func (k *Service) ImportKey(
 	)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save BLS key pair to file: %v", err))
-		k.metrics.RecordRPCServerResponse("kms/ImportKey", metrics.FailureLabel)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	k.metrics.RecordRPCServerResponse("kms/ImportKey", metrics.SuccessLabel)
 	return &v1.ImportKeyResponse{PublicKey: pubKeyHex}, nil
 }
 
@@ -135,15 +124,11 @@ func (k *Service) ListKeys(
 	ctx context.Context,
 	req *v1.ListKeysRequest,
 ) (*v1.ListKeysResponse, error) {
-	observe := k.metrics.RecordRPCServerRequest("kms/ListKeys")
-	defer observe()
 	pubKeys, err := k.store.ListKeys(ctx)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to list keys: %v", err))
-		k.metrics.RecordRPCServerResponse("kms/ListKeys", metrics.FailureLabel)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	k.metrics.RecordRPCServerResponse("kms/ListKeys", metrics.SuccessLabel)
 	return &v1.ListKeysResponse{PublicKeys: pubKeys}, nil
 }

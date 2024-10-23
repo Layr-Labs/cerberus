@@ -16,6 +16,7 @@ import (
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
 	"github.com/Layr-Labs/cerberus/internal/metrics"
+	"github.com/Layr-Labs/cerberus/internal/middleware"
 	"github.com/Layr-Labs/cerberus/internal/services/kms"
 	"github.com/Layr-Labs/cerberus/internal/services/signing"
 	"github.com/Layr-Labs/cerberus/internal/store/filesystem"
@@ -35,7 +36,8 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	registry.MustRegister(collectors.NewGoCollector())
-	rpcMetrics := metrics.NewRPCServerMetrics("remote_bls", registry)
+	rpcMetrics := metrics.NewRPCServerMetrics("cerberus", registry)
+
 	go startMetricsServer(registry, config.MetricsPort, logger)
 
 	keystore := filesystem.NewStore(config.KeystoreDir, logger)
@@ -50,6 +52,10 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 
 		opts = append(opts, grpc.Creds(creds))
 	}
+
+	// Register metrics middleware
+	metricsMiddleware := middleware.NewMetricsMiddleware(registry, rpcMetrics)
+	opts = append(opts, grpc.UnaryInterceptor(metricsMiddleware.UnaryServerInterceptor()))
 
 	s := grpc.NewServer(opts...)
 	kmsService := kms.NewService(config, keystore, logger, rpcMetrics)
