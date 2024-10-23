@@ -1,6 +1,20 @@
 # Remote Signer Implementation of cerberus-api
 This is a remote signer which supports BLS signatures on the BN254 curve.
 
+<!-- TOC -->
+* [Remote Signer Implementation of cerberus-api](#remote-signer-implementation-of-cerberus-api)
+    * [Installation](#installation)
+      * [Quick start](#quick-start)
+      * [Manual](#manual)
+    * [Usage options](#usage-options)
+    * [Monitoring](#monitoring)
+    * [Configuring Server-side TLS (optional)](#configuring-server-side-tls-optional)
+      * [Generating TLS certificates](#generating-tls-certificates)
+      * [Starting the server with TLS support](#starting-the-server-with-tls-support)
+      * [Connecting a GO client with the server using TLS](#connecting-a-go-client-with-the-server-using-tls)
+    * [Migrating keys from eigenlayer-cli to cerberus](#migrating-keys-from-eigenlayer-cli-to-cerberus)
+  * [Security Bugs](#security-bugs)
+<!-- TOC -->
 
 ### Installation
 #### Quick start
