@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Layr-Labs/cerberus/internal/middleware"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -18,6 +16,7 @@ import (
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
 	"github.com/Layr-Labs/cerberus/internal/metrics"
+	"github.com/Layr-Labs/cerberus/internal/middleware"
 	"github.com/Layr-Labs/cerberus/internal/services/kms"
 	"github.com/Layr-Labs/cerberus/internal/services/signing"
 	"github.com/Layr-Labs/cerberus/internal/store/filesystem"
