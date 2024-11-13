@@ -1,13 +1,12 @@
 module github.com/Layr-Labs/cerberus
 
 go 1.21
-
-toolchain go1.21.11
+toolchain go1.22.5
 
 require (
 	github.com/Layr-Labs/bn254-keystore-go v0.0.0-20241007185542-1a1ca1c72eb4
 	github.com/Layr-Labs/cerberus-api v0.0.1
-	github.com/consensys/gnark-crypto v0.12.1
+	github.com/consensys/gnark-crypto v0.14.0
 	github.com/prometheus/client_golang v1.20.3
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.27.5
