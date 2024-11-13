@@ -1,7 +1,7 @@
 github.com/Layr-Labs/bn254-keystore-go v0.0.0-20241007185542-1a1ca1c72eb4 h1:0EigmyPWUGcKhbaRtuJV1XdAzlS/qwpgHf0oUhq+r7s=
 github.com/Layr-Labs/bn254-keystore-go v0.0.0-20241007185542-1a1ca1c72eb4/go.mod h1:7J8hptSX8cFq7KmVb+rEO5aEifj7E44c3i0afIyr4WA=
-github.com/Layr-Labs/cerberus-api v0.0.0-20241016214048-d52f5ddc5559 h1:qbkT/+txp6dbQmbN2ro37T9V4hzt+ZWyqxGcQZBKgwo=
-github.com/Layr-Labs/cerberus-api v0.0.0-20241016214048-d52f5ddc5559/go.mod h1:Lm4fhzy0S3P7GjerzuseGaBFVczsIKmEhIjcT52Hluo=
+github.com/Layr-Labs/cerberus-api v0.0.1 h1:MSLVdxtRS1qnwLks3COnnUw/M3tjLGtbSGaLde86HRg=
+github.com/Layr-Labs/cerberus-api v0.0.1/go.mod h1:Lm4fhzy0S3P7GjerzuseGaBFVczsIKmEhIjcT52Hluo=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bits-and-blooms/bitset v1.14.2 h1:YXVoyPndbdvcEVcseEovVfp0qjJp7S+i5+xgp/Nfbdc=
