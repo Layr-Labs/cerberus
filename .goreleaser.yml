@@ -31,6 +31,7 @@ release:
   draft: true
 
 dockers:
+  - dockerfile: Dockerfile.goreleaser
   - image_templates:
       - ghcr.io/layr-labs/{{ .ProjectName }}:latest-amd64
       - ghcr.io/layr-labs/{{ .ProjectName }}:{{.Version}}-amd64
