@@ -32,3 +32,7 @@ lint: ## runs all linters
 .PHONY: tests
 tests: ## runs all tests
 	go test ./... -covermode=atomic
+
+.PHONY: docker
+docker: ## runs docker build
+	docker build -t $(APP_NAME):latest .

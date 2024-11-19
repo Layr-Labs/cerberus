@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  cerberus:
+    image: cerberus:latest
+    container_name: cerberus
+    ports:
+      - "${CERBERUS_METRICS_PORT}:${CERBERUS_METRICS_PORT}"
+      - "${CERBERUS_GRPC_PORT}:${CERBERUS_GRPC_PORT}"
+    environment:
+      - "KEYSTORE_DIR=/keystore"
+      - "METRICS_PORT=${CERBERUS_METRICS_PORT}"
+    volumes:
+      - "${CERBERUS_KEYSTORE_DIR}:/keystore"
+    env_file:
+      - .env
+    restart: unless-stopped
