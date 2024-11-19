@@ -35,7 +35,7 @@ func NewStore(
 		logger.Error(fmt.Sprintf("Error creating keystore directory: %v", err))
 		os.Exit(1)
 	}
-	logger.Info("Created keystore directory successfully")
+	logger.Info("Created keystore directory successfully", "keystore", keystoreDir)
 	return &FileStore{
 		keystoreDir: keystoreDir,
 		logger:      logger,
