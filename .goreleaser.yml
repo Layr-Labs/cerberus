@@ -35,7 +35,7 @@ dockers:
       - ghcr.io/layr-labs/{{ .ProjectName }}:latest-amd64
       - ghcr.io/layr-labs/{{ .ProjectName }}:{{.Version}}-amd64
     use: buildx
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--build-arg=APP_VERSION={{ .Version }}"
@@ -44,7 +44,7 @@ dockers:
       - ghcr.io/layr-labs/{{ .ProjectName }}:latest-arm64
       - ghcr.io/layr-labs/{{ .ProjectName }}:{{.Version}}-arm64
     use: buildx
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.goreleaser
     build_flag_templates:
       - "--platform=linux/arm64"
       - "--build-arg=APP_VERSION={{ .Version }}"
