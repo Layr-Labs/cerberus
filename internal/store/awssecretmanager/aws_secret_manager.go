@@ -22,14 +22,14 @@ var _ store.Store = (*Keystore)(nil)
 const storagePrefix = "cerberus/"
 
 type Keystore struct {
-	Region string
+	region string
 
 	logger *slog.Logger
 }
 
 func NewStore(region string, logger *slog.Logger) *Keystore {
 	return &Keystore{
-		Region: region,
+		region: region,
 		logger: logger.With("component", "aws-secret-manager-store"),
 	}
 }
@@ -39,7 +39,7 @@ func (k *Keystore) RetrieveKey(
 	pubKey string,
 	password string,
 ) (*crypto.KeyPair, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.Region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.region))
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (k *Keystore) RetrieveKey(
 }
 
 func (k *Keystore) StoreKey(ctx context.Context, keyPair *keystore.KeyPair) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.Region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.region))
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +98,7 @@ func (k *Keystore) StoreKey(ctx context.Context, keyPair *keystore.KeyPair) (str
 }
 
 func (k *Keystore) ListKeys(ctx context.Context) ([]string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.Region))
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.region))
 	if err != nil {
 		return nil, err
 	}
