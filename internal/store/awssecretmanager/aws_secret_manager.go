@@ -27,7 +27,18 @@ type Keystore struct {
 	logger *slog.Logger
 }
 
-func (k *Keystore) RetrieveKey(ctx context.Context, pubKey string, password string) (*crypto.KeyPair, error) {
+func NewStore(region string, logger *slog.Logger) *Keystore {
+	return &Keystore{
+		Region: region,
+		logger: logger.With("component", "aws-secret-manager-store"),
+	}
+}
+
+func (k *Keystore) RetrieveKey(
+	ctx context.Context,
+	pubKey string,
+	password string,
+) (*crypto.KeyPair, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.Region))
 	if err != nil {
 		return nil, err
