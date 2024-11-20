@@ -13,55 +13,6 @@ import (
 
 var (
 	version = "development"
-
-	keystoreDirFlag = &cli.StringFlag{
-		Name:    "keystore-dir",
-		Usage:   "Directory where the keystore files are stored",
-		Value:   "./data/keystore",
-		EnvVars: []string{"KEYSTORE_DIR"},
-	}
-
-	grpcPortFlag = &cli.StringFlag{
-		Name:    "grpc-port",
-		Usage:   "Port for the gRPC server",
-		Value:   "50051",
-		EnvVars: []string{"GRPC_PORT"},
-	}
-
-	metricsPortFlag = &cli.StringFlag{
-		Name:    "metrics-port",
-		Usage:   "Port for the metrics server",
-		Value:   "9091",
-		EnvVars: []string{"METRICS_PORT"},
-	}
-
-	logLevelFlag = &cli.StringFlag{
-		Name:    "log-level",
-		Usage:   "Log level - supported levels: debug, info, warn, error",
-		Value:   "info",
-		EnvVars: []string{"LOG_LEVEL"},
-	}
-
-	logFormatFlag = &cli.StringFlag{
-		Name:    "log-format",
-		Usage:   "Log format - supported formats: text, json",
-		Value:   "text",
-		EnvVars: []string{"LOG_FORMAT"},
-	}
-
-	// TLS flags to set up secure gRPC server, optional
-
-	tlsCaCert = &cli.StringFlag{
-		Name:    "tls-ca-cert",
-		Usage:   "TLS CA certificate",
-		EnvVars: []string{"TLS_CA_CERT"},
-	}
-
-	tlsServerKey = &cli.StringFlag{
-		Name:    "tls-server-key",
-		Usage:   "TLS server key",
-		EnvVars: []string{"TLS_SERVER_KEY"},
-	}
 )
 
 func main() {
@@ -88,8 +39,13 @@ func main() {
 		logFormatFlag,
 		logLevelFlag,
 		metricsPortFlag,
-		tlsCaCert,
-		tlsServerKey,
+		tlsCaCertFlag,
+		tlsServerKeyFlag,
+		storageTypeFlag,
+		awsRegionFlag,
+		awsAuthenticationModeFlag,
+		awsAccessKeyIDFlag,
+		awsSecretAccessKeyFlag,
 	}
 
 	app.Action = start
@@ -109,8 +65,8 @@ func start(c *cli.Context) error {
 	metricsPort := c.String(metricsPortFlag.Name)
 	logLevel := c.String(logLevelFlag.Name)
 	logFormat := c.String(logFormatFlag.Name)
-	tlsCaCert := c.String(tlsCaCert.Name)
-	tlsServerKey := c.String(tlsServerKey.Name)
+	tlsCaCert := c.String(tlsCaCertFlag.Name)
+	tlsServerKey := c.String(tlsServerKeyFlag.Name)
 
 	cfg := &configuration.Configuration{
 		KeystoreDir:  keystoreDir,
