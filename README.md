@@ -33,18 +33,54 @@ go build -o bin/cerberus cmd/cerberus/main.go
 ```
 
 ### Usage options
-| Options        | Description                                 | Default         |
-|----------------|---------------------------------------------|-----------------|
-| keystore-dir   | Directory to store encrypted keystore files | ./data/keystore |
-| grpc-port      | gRPC port for starting signer server        | 50051           |
-| log-format     | format of the logs (text, json)             | text            |
-| log-level      | debug, info, warn, error                    | info            |
-| metrics-port   | port to expose prometheus metrics           | 9091            |
-| tls-ca-cert    | certificate to enable TLS connection        |                 |
-| tls-server-key | server key to enable TLS connection         |                 |
-| help           | show help                                   |                 |
-| version        | show version                                |                 |
+```bash
+cerberus --help
+        
+                   _                             
+                  | |                            
+  ___   ___  _ __ | |__    ___  _ __  _   _  ___ 
+ / __| / _ \| '__|| '_ \  / _ \| '__|| | | |/ __|
+| (__ |  __/| |   | |_) ||  __/| |   | |_| |\__ \
+ \___| \___||_|   |_.__/  \___||_|    \__,_||___/
 
+  
+NAME:
+   cerberus - Remote BLS Signer
+
+USAGE:
+   cerberus [global options] command [command options]
+
+VERSION:
+   development
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --aws-access-key-id value        AWS access key ID [$AWS_ACCESS_KEY_ID]
+   --aws-authentication-mode value  AWS authentication mode - supported modes: environment, specified (default: "environment") [$AWS_AUTHENTICATION_MODE]
+   --aws-profile value              AWS profile (default: "default") [$AWS_PROFILE]
+   --aws-region value               AWS region (default: "us-east-2") [$AWS_REGION]
+   --aws-secret-access-key value    AWS secret access key [$AWS_SECRET_ACCESS_KEY]
+   --grpc-port value                Port for the gRPC server (default: "50051") [$GRPC_PORT]
+   --keystore-dir value             Directory where the keystore files are stored (default: "./data/keystore") [$KEYSTORE_DIR]
+   --log-format value               Log format - supported formats: text, json (default: "text") [$LOG_FORMAT]
+   --log-level value                Log level - supported levels: debug, info, warn, error (default: "info") [$LOG_LEVEL]
+   --metrics-port value             Port for the metrics server (default: "9091") [$METRICS_PORT]
+   --storage-type value             Storage type - supported types: filesystem, aws-secret-manager (default: "filesystem") [$STORAGE_TYPE]
+   --tls-ca-cert value              TLS CA certificate [$TLS_CA_CERT]
+   --tls-server-key value           TLS server key [$TLS_SERVER_KEY]
+   --help, -h                       show help
+   --version, -v                    print the version
+
+COPYRIGHT:
+   (c) 2024 EigenLab
+```
+
+### Storage Backend
+We support the following storage backends for storing private keys:
+1. [Filesystem](docs/filesystem.md)
+2. [AWS Secret Manager](docs/aws_sercret_manager.md)
 
 ### Monitoring
 The signer exposes prometheus metrics on the `/metrics` endpoint. You can scrape these metrics using a prometheus server.

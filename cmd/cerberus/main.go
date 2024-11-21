@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sort"
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
 	"github.com/Layr-Labs/cerberus/internal/server"
@@ -136,6 +137,7 @@ func main() {
 		awsAccessKeyIDFlag,
 		awsSecretAccessKeyFlag,
 	}
+	sort.Sort(cli.FlagsByName(app.Flags))
 
 	app.Action = start
 
