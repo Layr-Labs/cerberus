@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 
@@ -22,16 +23,56 @@ var _ store.Store = (*Keystore)(nil)
 const storagePrefix = "cerberus/"
 
 type Keystore struct {
-	region string
+	smClient *secretsmanager.Client
 
 	logger *slog.Logger
 }
 
-func NewStore(region string, logger *slog.Logger) *Keystore {
-	return &Keystore{
-		region: region,
-		logger: logger.With("component", "aws-secret-manager-store"),
+func NewStoreWithEnv(
+	region string,
+	profile string,
+	logger *slog.Logger,
+) (*Keystore, error) {
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(region),
+		config.WithSharedConfigProfile(profile),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	svc := secretsmanager.NewFromConfig(cfg)
+	return &Keystore{
+		smClient: svc,
+		logger:   logger.With("component", "aws-secret-manager-store"),
+	}, nil
+}
+
+func NewStoreWithSpecifiedCredentials(
+	region string,
+	awsAccessKeyId string,
+	awsSecretAccessKey string,
+	logger *slog.Logger,
+) (*Keystore, error) {
+	staticCredentials := credentials.NewStaticCredentialsProvider(
+		awsAccessKeyId,
+		awsSecretAccessKey,
+		"",
+	)
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(region),
+		config.WithCredentialsProvider(staticCredentials))
+
+	if err != nil {
+		return nil, err
+	}
+	svc := secretsmanager.NewFromConfig(cfg)
+	return &Keystore{
+		smClient: svc,
+		logger:   logger.With("component", "aws-secret-manager-store"),
+	}, nil
 }
 
 func (k *Keystore) RetrieveKey(
@@ -39,13 +80,6 @@ func (k *Keystore) RetrieveKey(
 	pubKey string,
 	password string,
 ) (*crypto.KeyPair, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.region))
-	if err != nil {
-		return nil, err
-	}
-
-	svc := secretsmanager.NewFromConfig(cfg)
-
 	storageKey := storagePrefix + pubKey
 
 	input := &secretsmanager.GetSecretValueInput{
@@ -53,7 +87,7 @@ func (k *Keystore) RetrieveKey(
 		VersionStage: aws.String("AWSCURRENT"),
 	}
 
-	result, err := svc.GetSecretValue(ctx, input)
+	result, err := k.smClient.GetSecretValue(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +103,6 @@ func (k *Keystore) RetrieveKey(
 }
 
 func (k *Keystore) StoreKey(ctx context.Context, keyPair *keystore.KeyPair) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.region))
-	if err != nil {
-		return "", err
-	}
-
 	pubKey, err := keystore.BlsSkToPk(keyPair.PrivateKey, string(curve.BN254))
 	if err != nil {
 		return "", err
@@ -81,15 +110,14 @@ func (k *Keystore) StoreKey(ctx context.Context, keyPair *keystore.KeyPair) (str
 
 	storageKey := storagePrefix + pubKey
 
-	svc := secretsmanager.NewFromConfig(cfg)
 	skHex := hex.EncodeToString(keyPair.PrivateKey)
 
-	storeRequest := &secretsmanager.PutSecretValueInput{
-		SecretId:     &storageKey,
+	storeRequest := &secretsmanager.CreateSecretInput{
+		Name:         &storageKey,
 		SecretString: aws.String(skHex),
 	}
 
-	_, err = svc.PutSecretValue(ctx, storeRequest)
+	_, err = k.smClient.CreateSecret(ctx, storeRequest)
 	if err != nil {
 		return "", err
 	}
@@ -98,13 +126,6 @@ func (k *Keystore) StoreKey(ctx context.Context, keyPair *keystore.KeyPair) (str
 }
 
 func (k *Keystore) ListKeys(ctx context.Context) ([]string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(k.region))
-	if err != nil {
-		return nil, err
-	}
-
-	svc := secretsmanager.NewFromConfig(cfg)
-
 	input := &secretsmanager.ListSecretsInput{
 		Filters: []types.Filter{
 			{
@@ -116,7 +137,7 @@ func (k *Keystore) ListKeys(ctx context.Context) ([]string, error) {
 		},
 	}
 
-	result, err := svc.ListSecrets(ctx, input)
+	result, err := k.smClient.ListSecrets(ctx, input)
 	if err != nil {
 		return nil, err
 	}

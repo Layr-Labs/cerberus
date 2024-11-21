@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Layr-Labs/cerberus/internal/store"
+	"github.com/Layr-Labs/cerberus/internal/store/awssecretmanager"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -40,7 +43,40 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 
 	go startMetricsServer(registry, config.MetricsPort, logger)
 
-	keystore := filesystem.NewStore(config.KeystoreDir, logger)
+	var keystore store.Store
+	switch config.StorageType {
+	case "filesystem":
+		keystore = filesystem.NewStore(config.KeystoreDir, logger)
+	case "aws-secrets-manager":
+		switch config.AWSAuthenticationMode {
+		case "environment":
+			keystore, err = awssecretmanager.NewStoreWithEnv(
+				config.AWSRegion,
+				config.AWSProfile,
+				logger,
+			)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to create AWS Secret Manager store: %v", err))
+				os.Exit(1)
+			}
+			logger.Info("Using environment credentials for AWS Secret Manager")
+		case "specified":
+			keystore, err = awssecretmanager.NewStoreWithSpecifiedCredentials(
+				config.AWSRegion,
+				config.AWSAccessKeyID,
+				config.AWSSecretAccessKey,
+				logger,
+			)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Failed to create AWS Secret Manager store: %v", err))
+				os.Exit(1)
+			}
+			logger.Info("Using specified credentials for AWS Secret Manager")
+		}
+	default:
+		logger.Error(fmt.Sprintf("Unsupported storage type: %s", config.StorageType))
+		os.Exit(1)
+	}
 
 	var opts []grpc.ServerOption
 	if config.TLSCACert != "" && config.TLSServerKey != "" {
