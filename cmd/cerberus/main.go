@@ -169,10 +169,10 @@ func start(c *cli.Context) error {
 		MetricsPort:           metricsPort,
 		TLSCACert:             tlsCaCert,
 		TLSServerKey:          tlsServerKey,
-		StorageType:           storageType,
+		StorageType:           configuration.StorageType(storageType),
 		AWSRegion:             awsRegion,
 		AWSProfile:            awsProfile,
-		AWSAuthenticationMode: awsAuthenticationMode,
+		AWSAuthenticationMode: configuration.AWSAuthenticationMode(awsAuthenticationMode),
 		AWSAccessKeyID:        awsAccessKeyID,
 		AWSSecretAccessKey:    awsSecretAccessKey,
 	}

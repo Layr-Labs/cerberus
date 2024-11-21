@@ -2,8 +2,20 @@ package configuration
 
 import "fmt"
 
+type StorageType string
+
+type AWSAuthenticationMode string
+
+const (
+	FileSystemStorageType       StorageType = "filesystem"
+	AWSSecretManagerStorageType StorageType = "aws-secrets-manager"
+
+	EnvironmentAWSAuthenticationMode AWSAuthenticationMode = "environment"
+	SpecifiedAWSAuthenticationMode   AWSAuthenticationMode = "specified"
+)
+
 type Configuration struct {
-	StorageType string
+	StorageType StorageType
 
 	// FileSystem storage parameters
 	KeystoreDir string
@@ -11,7 +23,7 @@ type Configuration struct {
 	// AWS Secrets Manager storage parameters
 	AWSRegion             string
 	AWSProfile            string
-	AWSAuthenticationMode string
+	AWSAuthenticationMode AWSAuthenticationMode
 	AWSAccessKeyID        string
 	AWSSecretAccessKey    string
 
@@ -28,16 +40,16 @@ func (s *Configuration) Validate() error {
 	}
 
 	switch s.StorageType {
-	case "filesystem":
+	case FileSystemStorageType:
 		if s.KeystoreDir == "" {
 			return fmt.Errorf("keystore directory is required")
 		}
-	case "aws-secrets-manager":
+	case AWSSecretManagerStorageType:
 		if s.AWSRegion == "" {
 			return fmt.Errorf("AWS region is required")
 		}
 
-		if s.AWSAuthenticationMode == "specified" {
+		if s.AWSAuthenticationMode == SpecifiedAWSAuthenticationMode {
 			if s.AWSAccessKeyID == "" {
 				return fmt.Errorf("AWS access key ID is required")
 			}

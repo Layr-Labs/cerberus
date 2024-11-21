@@ -45,11 +45,11 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 
 	var keystore store.Store
 	switch config.StorageType {
-	case "filesystem":
+	case configuration.FileSystemStorageType:
 		keystore = filesystem.NewStore(config.KeystoreDir, logger)
-	case "aws-secrets-manager":
+	case configuration.AWSSecretManagerStorageType:
 		switch config.AWSAuthenticationMode {
-		case "environment":
+		case configuration.EnvironmentAWSAuthenticationMode:
 			keystore, err = awssecretmanager.NewStoreWithEnv(
 				config.AWSRegion,
 				config.AWSProfile,
@@ -60,7 +60,7 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 				os.Exit(1)
 			}
 			logger.Info("Using environment credentials for AWS Secret Manager")
-		case "specified":
+		case configuration.SpecifiedAWSAuthenticationMode:
 			keystore, err = awssecretmanager.NewStoreWithSpecifiedCredentials(
 				config.AWSRegion,
 				config.AWSAccessKeyID,

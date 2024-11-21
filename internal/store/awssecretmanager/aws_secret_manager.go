@@ -3,6 +3,7 @@ package awssecretmanager
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -63,7 +64,8 @@ func NewStoreWithSpecifiedCredentials(
 	cfg, err := config.LoadDefaultConfig(
 		context.Background(),
 		config.WithRegion(region),
-		config.WithCredentialsProvider(staticCredentials))
+		config.WithCredentialsProvider(staticCredentials),
+	)
 
 	if err != nil {
 		return nil, err
@@ -142,6 +144,7 @@ func (k *Keystore) ListKeys(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
+	k.logger.Debug(fmt.Sprintf("Found %d key files", len(result.SecretList)))
 	var keys []string
 	for _, secret := range result.SecretList {
 		keys = append(keys, removePrefix(*secret.Name, storagePrefix))
