@@ -90,6 +90,14 @@ func NewKeyPair(sk *PrivateKey) *KeyPair {
 	return &KeyPair{sk, &G1Point{pk}}
 }
 
+func NewKeyPairFromString(sk string) (*KeyPair, error) {
+	ele, err := new(fr.Element).SetString(sk)
+	if err != nil {
+		return nil, err
+	}
+	return NewKeyPair(ele), nil
+}
+
 // SignMessage This signs a message on G1, and so will require a G2Pubkey to verify
 func (k *KeyPair) SignMessage(message [32]byte) *Signature {
 	H := MapToCurve(message)
