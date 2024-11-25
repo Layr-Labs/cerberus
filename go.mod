@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.6
 	github.com/consensys/gnark-crypto v0.12.1
 	github.com/prometheus/client_golang v1.20.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 	google.golang.org/grpc v1.64.1
 )
