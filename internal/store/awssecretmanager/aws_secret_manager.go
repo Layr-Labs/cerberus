@@ -96,8 +96,7 @@ func (k *Keystore) RetrieveKey(
 	}
 
 	var secretString = *result.SecretString
-
-	// This is a workaround to convert the big.Int to a keypair
+	
 	kp, err := crypto.NewKeyPairFromHexString(secretString)
 	if err != nil {
 		return nil, err
