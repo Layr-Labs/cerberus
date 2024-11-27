@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.21.11
 
 require (
+	cloud.google.com/go/secretmanager v1.14.2
 	github.com/Layr-Labs/bn254-keystore-go v0.0.0-20241118175331-3ceaf682f032
 	github.com/Layr-Labs/cerberus-api v0.0.1
 	github.com/aws/aws-sdk-go-v2 v1.32.5
@@ -15,6 +16,7 @@ require (
 	github.com/prometheus/client_golang v1.20.3
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
+	google.golang.org/api v0.203.0
 	google.golang.org/grpc v1.67.1
 )
 
@@ -23,7 +25,6 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.1 // indirect
-	cloud.google.com/go/secretmanager v1.14.2 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.20 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.24 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.24 // indirect
@@ -70,7 +71,6 @@ require (
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
-	google.golang.org/api v0.203.0 // indirect
 	google.golang.org/genproto v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241007155032-5fefd90f89a9 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
