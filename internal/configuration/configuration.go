@@ -7,8 +7,9 @@ type StorageType string
 type AWSAuthenticationMode string
 
 const (
-	FileSystemStorageType       StorageType = "filesystem"
-	AWSSecretManagerStorageType StorageType = "aws-secrets-manager"
+	FileSystemStorageType          StorageType = "filesystem"
+	AWSSecretManagerStorageType    StorageType = "aws-secrets-manager"
+	GoogleSecretManagerStorageType StorageType = "google-secrets-manager"
 
 	EnvironmentAWSAuthenticationMode AWSAuthenticationMode = "environment"
 	SpecifiedAWSAuthenticationMode   AWSAuthenticationMode = "specified"
@@ -26,6 +27,9 @@ type Configuration struct {
 	AWSAuthenticationMode AWSAuthenticationMode
 	AWSAccessKeyID        string
 	AWSSecretAccessKey    string
+
+	// Google Secrets Manager storage parameters
+	GCPProjectID string
 
 	GrpcPort    string
 	MetricsPort string
@@ -56,6 +60,10 @@ func (s *Configuration) Validate() error {
 			if s.AWSSecretAccessKey == "" {
 				return fmt.Errorf("AWS secret access key is required")
 			}
+		}
+	case GoogleSecretManagerStorageType:
+		if s.GCPProjectID == "" {
+			return fmt.Errorf("GCP project ID is required")
 		}
 	default:
 		return fmt.Errorf("unsupported storage type: %s", s.StorageType)

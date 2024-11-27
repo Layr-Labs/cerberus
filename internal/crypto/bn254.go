@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
@@ -90,8 +91,23 @@ func NewKeyPair(sk *PrivateKey) *KeyPair {
 	return &KeyPair{sk, &G1Point{pk}}
 }
 
+// NewKeyPairFromString creates a new keypair from a decimal string
 func NewKeyPairFromString(sk string) (*KeyPair, error) {
 	ele, err := new(fr.Element).SetString(sk)
+	if err != nil {
+		return nil, err
+	}
+	return NewKeyPair(ele), nil
+}
+
+// NewKeyPairFromHexString creates a new keypair from a hex string
+func NewKeyPairFromHexString(sk string) (*KeyPair, error) {
+	skBytes, err := hex.DecodeString(sk)
+	if err != nil {
+		return nil, err
+	}
+	skInt := new(big.Int).SetBytes(skBytes)
+	ele, err := new(fr.Element).SetString(skInt.String())
 	if err != nil {
 		return nil, err
 	}

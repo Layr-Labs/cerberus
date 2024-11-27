@@ -6,3 +6,10 @@ func Trim0x(s string) string {
 	}
 	return s
 }
+
+func RemovePrefix(s string, prefix string) string {
+	if len(s) > len(prefix) && s[:len(prefix)] == prefix {
+		return s[len(prefix):]
+	}
+	return s
+}

@@ -102,6 +102,12 @@ var (
 		Usage:   "AWS secret access key",
 		EnvVars: []string{"AWS_SECRET_ACCESS_KEY"},
 	}
+
+	gcpProjectIDFlag = &cli.StringFlag{
+		Name:    "gcp-project-id",
+		Usage:   "Project ID for Google Cloud Platform",
+		EnvVars: []string{"GCP_PROJECT_ID"},
+	}
 )
 
 func main() {
@@ -136,6 +142,7 @@ func main() {
 		awsAuthenticationModeFlag,
 		awsAccessKeyIDFlag,
 		awsSecretAccessKeyFlag,
+		gcpProjectIDFlag,
 	}
 	sort.Sort(cli.FlagsByName(app.Flags))
 
@@ -164,6 +171,7 @@ func start(c *cli.Context) error {
 	awsAuthenticationMode := c.String(awsAuthenticationModeFlag.Name)
 	awsAccessKeyID := c.String(awsAccessKeyIDFlag.Name)
 	awsSecretAccessKey := c.String(awsSecretAccessKeyFlag.Name)
+	gcpProjectID := c.String(gcpProjectIDFlag.Name)
 
 	cfg := &configuration.Configuration{
 		KeystoreDir:           keystoreDir,
@@ -177,6 +185,7 @@ func start(c *cli.Context) error {
 		AWSAuthenticationMode: configuration.AWSAuthenticationMode(awsAuthenticationMode),
 		AWSAccessKeyID:        awsAccessKeyID,
 		AWSSecretAccessKey:    awsSecretAccessKey,
+		GCPProjectID:          gcpProjectID,
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -193,7 +202,6 @@ func start(c *cli.Context) error {
 		handler := slog.NewTextHandler(os.Stdout, &slogOptions)
 		logger = slog.New(handler)
 	}
-	logger.Info("using configuration", "config", cfg)
 	logger.Info(fmt.Sprintf("Starting cerberus server version: %s", version))
 	server.Start(cfg, logger)
 	return nil

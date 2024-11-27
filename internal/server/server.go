@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Layr-Labs/cerberus/internal/store/googlesm"
+
 	"github.com/Layr-Labs/cerberus/internal/store"
 	"github.com/Layr-Labs/cerberus/internal/store/awssecretmanager"
 
@@ -72,6 +74,12 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 				os.Exit(1)
 			}
 			logger.Info("Using specified credentials for AWS Secret Manager")
+		}
+	case configuration.GoogleSecretManagerStorageType:
+		keystore, err = googlesm.NewKeystore(config.GCPProjectID, logger)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to create Google Secret Manager store: %v", err))
+			os.Exit(1)
 		}
 	default:
 		logger.Error(fmt.Sprintf("Unsupported storage type: %s", config.StorageType))
