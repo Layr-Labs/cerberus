@@ -146,7 +146,7 @@ func (k Keystore) ListKeys(ctx context.Context) ([]string, error) {
 //
 //	projects/<project-id>/secrets/cerberus<pubkey>
 func getPubKey(resource string) string {
-	regex := `cerberus(.*)`
+	regex := fmt.Sprintf("%s(.*)", storagePrefix)
 
 	re := regexp.MustCompile(regex)
 	matches := re.FindStringSubmatch(resource)
