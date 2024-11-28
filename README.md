@@ -81,6 +81,7 @@ COPYRIGHT:
 We support the following storage backends for storing private keys:
 1. [Filesystem](docs/filesystem.md)
 2. [AWS Secret Manager](docs/aws_sercret_manager.md)
+3. [Google Secret Manager](docs/google_secret_manager.md)
 
 ### Monitoring
 The signer exposes prometheus metrics on the `/metrics` endpoint. You can scrape these metrics using a prometheus server.

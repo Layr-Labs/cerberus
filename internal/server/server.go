@@ -8,9 +8,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Layr-Labs/cerberus/internal/store"
-	"github.com/Layr-Labs/cerberus/internal/store/awssecretmanager"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -22,7 +19,10 @@ import (
 	"github.com/Layr-Labs/cerberus/internal/middleware"
 	"github.com/Layr-Labs/cerberus/internal/services/kms"
 	"github.com/Layr-Labs/cerberus/internal/services/signing"
+	"github.com/Layr-Labs/cerberus/internal/store"
+	"github.com/Layr-Labs/cerberus/internal/store/awssecretmanager"
 	"github.com/Layr-Labs/cerberus/internal/store/filesystem"
+	"github.com/Layr-Labs/cerberus/internal/store/googlesm"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -72,6 +72,12 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 				os.Exit(1)
 			}
 			logger.Info("Using specified credentials for AWS Secret Manager")
+		}
+	case configuration.GoogleSecretManagerStorageType:
+		keystore, err = googlesm.NewKeystore(config.GCPProjectID, logger)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to create Google Secret Manager store: %v", err))
+			os.Exit(1)
 		}
 	default:
 		logger.Error(fmt.Sprintf("Unsupported storage type: %s", config.StorageType))

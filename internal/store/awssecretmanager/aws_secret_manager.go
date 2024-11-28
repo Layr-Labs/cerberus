@@ -15,6 +15,7 @@ import (
 	"github.com/Layr-Labs/bn254-keystore-go/curve"
 	"github.com/Layr-Labs/bn254-keystore-go/keystore"
 
+	"github.com/Layr-Labs/cerberus/internal/common"
 	"github.com/Layr-Labs/cerberus/internal/crypto"
 	"github.com/Layr-Labs/cerberus/internal/store"
 )
@@ -96,7 +97,7 @@ func (k *Keystore) RetrieveKey(
 
 	var secretString = *result.SecretString
 
-	kp, err := crypto.NewKeyPairFromString(secretString)
+	kp, err := crypto.NewKeyPairFromHexString(secretString)
 	if err != nil {
 		return nil, err
 	}
@@ -147,15 +148,8 @@ func (k *Keystore) ListKeys(ctx context.Context) ([]string, error) {
 	k.logger.Debug(fmt.Sprintf("Found %d key files", len(result.SecretList)))
 	var keys []string
 	for _, secret := range result.SecretList {
-		keys = append(keys, removePrefix(*secret.Name, storagePrefix))
+		keys = append(keys, common.RemovePrefix(*secret.Name, storagePrefix))
 	}
 
 	return keys, nil
-}
-
-func removePrefix(s string, prefix string) string {
-	if len(s) > len(prefix) && s[:len(prefix)] == prefix {
-		return s[len(prefix):]
-	}
-	return s
 }
