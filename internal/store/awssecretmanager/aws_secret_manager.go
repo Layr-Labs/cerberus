@@ -96,7 +96,7 @@ func (k *Keystore) RetrieveKey(
 	}
 
 	var secretString = *result.SecretString
-	
+
 	kp, err := crypto.NewKeyPairFromHexString(secretString)
 	if err != nil {
 		return nil, err
