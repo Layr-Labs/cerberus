@@ -1,8 +1,7 @@
 module github.com/Layr-Labs/cerberus
 
 go 1.21
-
-toolchain go1.21.11
+toolchain go1.22.5
 
 require (
 	cloud.google.com/go/secretmanager v1.14.2
@@ -17,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.5
 	google.golang.org/api v0.203.0
-	google.golang.org/grpc v1.67.1
+	google.golang.org/grpc v1.68.1
 )
 
 require (
