@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
 	"github.com/Layr-Labs/cerberus/internal/server"
@@ -133,7 +134,7 @@ func main() {
 	app.Name = "cerberus"
 	app.Usage = "Remote BLS Signer"
 	app.Version = version
-	app.Copyright = "(c) 2024 EigenLabs"
+	app.Copyright = fmt.Sprintf("(c) %d EigenLabs", time.Now().Year())
 
 	app.Flags = []cli.Flag{
 		keystoreDirFlag,
