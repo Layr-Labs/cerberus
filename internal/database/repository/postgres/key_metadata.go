@@ -52,6 +52,13 @@ const (
 )
 
 func (r *keyMetadataRepo) Create(ctx context.Context, metadata *model.KeyMetadata) error {
+	if metadata.PublicKeyG1 == "" {
+		return errors.New("public key g1 is required")
+	}
+	if metadata.PublicKeyG2 == "" {
+		return errors.New("public key g2 is required")
+	}
+
 	now := time.Now().UTC()
 	metadata.CreatedAt = now
 	metadata.UpdatedAt = now
@@ -83,6 +90,10 @@ func (r *keyMetadataRepo) Get(ctx context.Context, publicKeyG1 string) (*model.K
 }
 
 func (r *keyMetadataRepo) Update(ctx context.Context, metadata *model.KeyMetadata) error {
+	if metadata.PublicKeyG1 == "" {
+		return errors.New("public key g1 is required")
+	}
+
 	metadata.UpdatedAt = time.Now().UTC()
 	result, err := r.db.ExecContext(ctx, updateKeyMetadataQuery,
 		metadata.UpdatedAt,
@@ -103,6 +114,10 @@ func (r *keyMetadataRepo) Update(ctx context.Context, metadata *model.KeyMetadat
 }
 
 func (r *keyMetadataRepo) Delete(ctx context.Context, publicKeyG1 string) error {
+	if publicKeyG1 == "" {
+		return errors.New("public key g1 is required")
+	}
+
 	result, err := r.db.ExecContext(ctx, deleteKeyMetadataQuery, publicKeyG1)
 	if err != nil {
 		return err
