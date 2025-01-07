@@ -4,12 +4,10 @@ go 1.22.0
 
 toolchain go1.22.3
 
-replace github.com/Layr-Labs/cerberus-api => ../cerberus-api
-
 require (
 	cloud.google.com/go/secretmanager v1.14.2
 	github.com/Layr-Labs/bn254-keystore-go v0.0.0-20250107020618-26bd412fae87
-	github.com/Layr-Labs/cerberus-api v0.0.1
+	github.com/Layr-Labs/cerberus-api v0.0.2-0.20250107174124-05df6050f723
 	github.com/aws/aws-sdk-go-v2 v1.32.5
 	github.com/aws/aws-sdk-go-v2/config v1.28.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.46
