@@ -36,6 +36,9 @@ type Configuration struct {
 
 	TLSCACert    string
 	TLSServerKey string
+
+	// Postgres database parameters
+	PostgresDatabaseURL string
 }
 
 func (s *Configuration) Validate() error {
@@ -83,6 +86,10 @@ func (s *Configuration) Validate() error {
 
 	if s.TLSServerKey != "" && s.TLSCACert == "" {
 		return fmt.Errorf("TLS CA certificate is required when TLS server key is provided")
+	}
+
+	if s.PostgresDatabaseURL == "" {
+		return fmt.Errorf("postgres database URL is required")
 	}
 
 	return nil

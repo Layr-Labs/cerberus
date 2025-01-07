@@ -75,7 +75,7 @@ func (k Keystore) RetrieveKey(
 }
 
 func (k Keystore) StoreKey(ctx context.Context, keyPair *keystore.KeyPair) (string, error) {
-	pubKey, err := keystore.BlsSkToPk(keyPair.PrivateKey, string(curve.BN254))
+	pubKey, err := keystore.BlsSkToG1Pk(keyPair.PrivateKey, string(curve.BN254))
 	if err != nil {
 		return "", err
 	}

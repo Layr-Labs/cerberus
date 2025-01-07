@@ -11,9 +11,12 @@ import (
 
 	"github.com/Layr-Labs/cerberus/internal/common"
 	"github.com/Layr-Labs/cerberus/internal/configuration"
+	"github.com/Layr-Labs/cerberus/internal/database/model"
+	"github.com/Layr-Labs/cerberus/internal/database/repository"
 	"github.com/Layr-Labs/cerberus/internal/metrics"
 	"github.com/Layr-Labs/cerberus/internal/store"
 
+	"github.com/Layr-Labs/bn254-keystore-go/curve"
 	"github.com/Layr-Labs/bn254-keystore-go/keystore"
 	"github.com/Layr-Labs/bn254-keystore-go/mnemonic"
 
@@ -22,10 +25,11 @@ import (
 )
 
 type Service struct {
-	config  *configuration.Configuration
-	logger  *slog.Logger
-	store   store.Store
-	metrics metrics.Recorder
+	config          *configuration.Configuration
+	logger          *slog.Logger
+	store           store.Store
+	metrics         metrics.Recorder
+	keyMetadataRepo repository.KeyMetadataRepository
 
 	v1.UnimplementedKeyManagerServer
 }
@@ -33,14 +37,16 @@ type Service struct {
 func NewService(
 	config *configuration.Configuration,
 	store store.Store,
+	keyMetadataRepo repository.KeyMetadataRepository,
 	logger *slog.Logger,
 	metrics metrics.Recorder,
 ) *Service {
 	return &Service{
-		config:  config,
-		store:   store,
-		metrics: metrics,
-		logger:  logger.With("component", "kms"),
+		config:          config,
+		store:           store,
+		metrics:         metrics,
+		keyMetadataRepo: keyMetadataRepo,
+		logger:          logger.With("component", "kms"),
 	}
 }
 
@@ -57,9 +63,24 @@ func (k *Service) GenerateKeyPair(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	g2PubKey, err := keyPair.GetG2PublicKey(curve.BN254)
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to get G2 public key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	pubKeyHex, err := k.store.StoreKey(ctx, keyPair)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save BLS key pair to file: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = k.keyMetadataRepo.Create(ctx, &model.KeyMetadata{
+		PublicKeyG1: pubKeyHex,
+		PublicKeyG2: g2PubKey,
+	})
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to save key metadata: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -69,9 +90,10 @@ func (k *Service) GenerateKeyPair(
 	privKeyHex := common.Trim0x(hex.EncodeToString(pkBytesSlice))
 
 	return &v1.GenerateKeyPairResponse{
-		PublicKey:  pubKeyHex,
-		PrivateKey: privKeyHex,
-		Mnemonic:   keyPair.Mnemonic,
+		PublicKeyG1: pubKeyHex,
+		PublicKeyG2: g2PubKey,
+		PrivateKey:  privKeyHex,
+		Mnemonic:    keyPair.Mnemonic,
 	}, nil
 }
 
@@ -117,18 +139,61 @@ func (k *Service) ImportKey(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &v1.ImportKeyResponse{PublicKey: pubKeyHex}, nil
+	ks := &keystore.KeyPair{
+		PrivateKey: pkBytes,
+	}
+
+	g2PubKey, err := ks.GetG2PublicKey(curve.BN254)
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to get G2 public key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = k.keyMetadataRepo.Create(ctx, &model.KeyMetadata{
+		PublicKeyG1: pubKeyHex,
+		PublicKeyG2: g2PubKey,
+	})
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to save key metadata: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &v1.ImportKeyResponse{PublicKeyG1: pubKeyHex, PublicKeyG2: g2PubKey}, nil
 }
 
 func (k *Service) ListKeys(
 	ctx context.Context,
 	req *v1.ListKeysRequest,
 ) (*v1.ListKeysResponse, error) {
-	pubKeys, err := k.store.ListKeys(ctx)
+	keys, err := k.keyMetadataRepo.List(ctx)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to list keys: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	pubKeys := make([]*v1.PublicKey, len(keys))
+	for i, key := range keys {
+		pubKeys[i] = &v1.PublicKey{
+			PublicKeyG1: key.PublicKeyG1,
+			PublicKeyG2: key.PublicKeyG2,
+		}
+	}
 
 	return &v1.ListKeysResponse{PublicKeys: pubKeys}, nil
+}
+
+func (k *Service) GetKeyMetadata(
+	ctx context.Context,
+	req *v1.GetKeyMetadataRequest,
+) (*v1.GetKeyMetadataResponse, error) {
+	metadata, err := k.keyMetadataRepo.Get(ctx, req.GetPublicKeyG1())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &v1.GetKeyMetadataResponse{
+		PublicKeyG1: metadata.PublicKeyG1,
+		PublicKeyG2: metadata.PublicKeyG2,
+		CreatedAt:   metadata.CreatedAt.Unix(),
+		UpdatedAt:   metadata.UpdatedAt.Unix(),
+	}, nil
 }

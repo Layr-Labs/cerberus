@@ -1,6 +1,9 @@
 # Remote Signer Implementation of cerberus-api
 This is a remote signer which supports BLS signatures on the BN254 curve.
 
+## Disclaimer
+🚧 Cerberus is under active development and has not been audited. Cerberus is rapidly being upgraded, features may be added, removed or otherwise improved or modified and interfaces will have breaking changes. Cerberus should be used only for testing purposes and not in production. Cerberus is provided "as is" and Eigen Labs, Inc. does not guarantee its functionality or provide support for its use in production. 🚧
+
 <!-- TOC -->
 * [Remote Signer Implementation of cerberus-api](#remote-signer-implementation-of-cerberus-api)
     * [Installation](#installation)

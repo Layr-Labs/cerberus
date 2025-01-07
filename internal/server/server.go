@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"log/slog"
@@ -15,6 +16,8 @@ import (
 	v1 "github.com/Layr-Labs/cerberus-api/pkg/api/v1"
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
+	"github.com/Layr-Labs/cerberus/internal/database"
+	"github.com/Layr-Labs/cerberus/internal/database/repository/postgres"
 	"github.com/Layr-Labs/cerberus/internal/metrics"
 	"github.com/Layr-Labs/cerberus/internal/middleware"
 	"github.com/Layr-Labs/cerberus/internal/services/kms"
@@ -27,6 +30,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
+
+	_ "github.com/lib/pq"
 )
 
 func Start(config *configuration.Configuration, logger *slog.Logger) {
@@ -95,12 +100,27 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 		opts = append(opts, grpc.Creds(creds))
 	}
 
+	// Initialize database
+	db, err := sql.Open("postgres", config.PostgresDatabaseURL)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to connect to database: %v", err))
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	if err := database.MigrateDB(config.PostgresDatabaseURL, logger); err != nil {
+		logger.Error(fmt.Sprintf("Failed to migrate database: %v", err))
+		os.Exit(1)
+	}
+
+	keyMetadataRepo := postgres.NewKeyMetadataRepository(db)
+
 	// Register metrics middleware
 	metricsMiddleware := middleware.NewMetricsMiddleware(registry, rpcMetrics)
 	opts = append(opts, grpc.UnaryInterceptor(metricsMiddleware.UnaryServerInterceptor()))
 
 	s := grpc.NewServer(opts...)
-	kmsService := kms.NewService(config, keystore, logger, rpcMetrics)
+	kmsService := kms.NewService(config, keystore, keyMetadataRepo, logger, rpcMetrics)
 	signingService := signing.NewService(config, keystore, logger, rpcMetrics)
 
 	v1.RegisterKeyManagerServer(s, kmsService)
