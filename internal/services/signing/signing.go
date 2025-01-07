@@ -46,11 +46,11 @@ func (s *Service) SignGeneric(
 	req *v1.SignGenericRequest,
 ) (*v1.SignGenericResponse, error) {
 	// Take the public key and data from the request
-	pubKeyHex := common.Trim0x(req.GetPublicKey())
+	pubKeyHex := common.Trim0x(req.GetPublicKeyG1())
 	password := req.GetPassword()
 
 	if _, ok := s.keyCache[pubKeyHex]; !ok {
-		s.logger.Info(fmt.Sprintf("In memory cache miss. Retrieving key for %s", req.PublicKey))
+		s.logger.Info(fmt.Sprintf("In memory cache miss. Retrieving key for %s", pubKeyHex))
 		blsKey, err := s.store.RetrieveKey(ctx, pubKeyHex, password)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to retrieve key: %v", err))
@@ -70,6 +70,6 @@ func (s *Service) SignGeneric(
 	copy(byteArray[:], data)
 	// Sign the data with the private key
 	sig := blsKey.SignMessage(byteArray)
-	s.logger.Info(fmt.Sprintf("Signed a message successfully using %s", req.PublicKey))
+	s.logger.Info(fmt.Sprintf("Signed a message successfully using %s", pubKeyHex))
 	return &v1.SignGenericResponse{Signature: sig.Serialize()}, nil
 }

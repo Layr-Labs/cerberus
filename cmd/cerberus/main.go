@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
 	"github.com/Layr-Labs/cerberus/internal/server"
@@ -108,6 +109,13 @@ var (
 		Usage:   "Project ID for Google Cloud Platform",
 		EnvVars: []string{"GCP_PROJECT_ID"},
 	}
+
+	postgresDatabaseURLFlag = &cli.StringFlag{
+		Name:    "postgres-database-url",
+		Usage:   "Postgres database URL",
+		Value:   "postgres://user:password@localhost:5432/cerberus?sslmode=disable",
+		EnvVars: []string{"POSTGRES_DATABASE_URL"},
+	}
 )
 
 func main() {
@@ -126,7 +134,7 @@ func main() {
 	app.Name = "cerberus"
 	app.Usage = "Remote BLS Signer"
 	app.Version = version
-	app.Copyright = "(c) 2024 EigenLabs"
+	app.Copyright = fmt.Sprintf("(c) %d Eigen Labs", time.Now().Year())
 
 	app.Flags = []cli.Flag{
 		keystoreDirFlag,
@@ -143,6 +151,7 @@ func main() {
 		awsAccessKeyIDFlag,
 		awsSecretAccessKeyFlag,
 		gcpProjectIDFlag,
+		postgresDatabaseURLFlag,
 	}
 	sort.Sort(cli.FlagsByName(app.Flags))
 
@@ -172,7 +181,7 @@ func start(c *cli.Context) error {
 	awsAccessKeyID := c.String(awsAccessKeyIDFlag.Name)
 	awsSecretAccessKey := c.String(awsSecretAccessKeyFlag.Name)
 	gcpProjectID := c.String(gcpProjectIDFlag.Name)
-
+	postgresDatabaseURL := c.String(postgresDatabaseURLFlag.Name)
 	cfg := &configuration.Configuration{
 		KeystoreDir:           keystoreDir,
 		GrpcPort:              grpcPort,
@@ -186,6 +195,7 @@ func start(c *cli.Context) error {
 		AWSAccessKeyID:        awsAccessKeyID,
 		AWSSecretAccessKey:    awsSecretAccessKey,
 		GCPProjectID:          gcpProjectID,
+		PostgresDatabaseURL:   postgresDatabaseURL,
 	}
 
 	if err := cfg.Validate(); err != nil {

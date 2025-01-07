@@ -1,6 +1,9 @@
 # Remote Signer Implementation of cerberus-api
 This is a remote signer which supports BLS signatures on the BN254 curve.
 
+## Disclaimer
+🚧 Cerberus is under active development and has not been audited. Cerberus is rapidly being upgraded, features may be added, removed or otherwise improved or modified and interfaces will have breaking changes. Cerberus should be used only for testing purposes and not in production. Cerberus is provided "as is" and Eigen Labs, Inc. does not guarantee its functionality or provide support for its use in production. 🚧
+
 <!-- TOC -->
 * [Remote Signer Implementation of cerberus-api](#remote-signer-implementation-of-cerberus-api)
     * [Installation](#installation)
@@ -62,11 +65,13 @@ GLOBAL OPTIONS:
    --aws-profile value              AWS profile (default: "default") [$AWS_PROFILE]
    --aws-region value               AWS region (default: "us-east-2") [$AWS_REGION]
    --aws-secret-access-key value    AWS secret access key [$AWS_SECRET_ACCESS_KEY]
+   --gcp-project-id value           Project ID for Google Cloud Platform [$GCP_PROJECT_ID]
    --grpc-port value                Port for the gRPC server (default: "50051") [$GRPC_PORT]
    --keystore-dir value             Directory where the keystore files are stored (default: "./data/keystore") [$KEYSTORE_DIR]
    --log-format value               Log format - supported formats: text, json (default: "text") [$LOG_FORMAT]
    --log-level value                Log level - supported levels: debug, info, warn, error (default: "info") [$LOG_LEVEL]
    --metrics-port value             Port for the metrics server (default: "9091") [$METRICS_PORT]
+   --postgres-database-url value    Postgres database URL (default: "postgres://user:password@localhost:5432/cerberus?sslmode=disable") [$POSTGRES_DATABASE_URL]
    --storage-type value             Storage type - supported types: filesystem, aws-secret-manager (default: "filesystem") [$STORAGE_TYPE]
    --tls-ca-cert value              TLS CA certificate [$TLS_CA_CERT]
    --tls-server-key value           TLS server key [$TLS_SERVER_KEY]
@@ -74,7 +79,7 @@ GLOBAL OPTIONS:
    --version, -v                    print the version
 
 COPYRIGHT:
-   (c) 2024 EigenLab
+   (c) 2025 EigenLabs
 ```
 
 ### Storage Backend

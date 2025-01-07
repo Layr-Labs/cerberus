@@ -36,3 +36,8 @@ tests: ## runs all tests
 .PHONY: docker
 docker: ## runs docker build
 	docker build -t $(APP_NAME):latest .
+
+.PHONY: migrate
+migrate: ## runs database migrations
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	migrate -path internal/database/migrations/ -database "postgres://user:password@localhost:5432/cerberus?sslmode=disable" --verbose up

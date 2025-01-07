@@ -33,9 +33,9 @@ func TestSigning(t *testing.T) {
 	signingService := NewService(config, store, logger, m)
 
 	resp, err := signingService.SignGeneric(context.Background(), &v1.SignGenericRequest{
-		PublicKey: pubKeyHex,
-		Data:      bytes[:],
-		Password:  password,
+		PublicKeyG1: pubKeyHex,
+		Data:        bytes[:],
+		Password:    password,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSig, hex.EncodeToString(resp.Signature))
