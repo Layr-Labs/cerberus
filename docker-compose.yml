@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   cerberus:
     image: ghcr.io/layr-labs/cerberus:latest
@@ -9,8 +8,29 @@ services:
     environment:
       - "KEYSTORE_DIR=/keystore"
       - "METRICS_PORT=${CERBERUS_METRICS_PORT}"
+      - "POSTGRES_DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable"
     volumes:
       - "${CERBERUS_KEYSTORE_DIR}:/keystore"
     env_file:
       - .env
     restart: unless-stopped
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: db
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      - "POSTGRES_PASSWORD=${DB_PASSWORD}"
+      - "POSTGRES_USER=${DB_USER}"
+      - "POSTGRES_DB=${DB_NAME}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
