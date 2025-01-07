@@ -134,7 +134,7 @@ func main() {
 	app.Name = "cerberus"
 	app.Usage = "Remote BLS Signer"
 	app.Version = version
-	app.Copyright = fmt.Sprintf("(c) %d EigenLabs", time.Now().Year())
+	app.Copyright = fmt.Sprintf("(c) %d Eigen Labs", time.Now().Year())
 
 	app.Flags = []cli.Flag{
 		keystoreDirFlag,
