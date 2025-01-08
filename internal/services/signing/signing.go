@@ -73,3 +73,30 @@ func (s *Service) SignGeneric(
 	s.logger.Info(fmt.Sprintf("Signed a message successfully using %s", pubKeyHex))
 	return &v1.SignGenericResponse{Signature: sig.Serialize()}, nil
 }
+
+func (s *Service) SignG1(
+	ctx context.Context,
+	req *v1.SignG1Request,
+) (*v1.SignG1Response, error) {
+	// Take the public key and data from the request
+	pubKeyHex := common.Trim0x(req.GetPublicKeyG1())
+	password := req.GetPassword()
+
+	if _, ok := s.keyCache[pubKeyHex]; !ok {
+		s.logger.Info(fmt.Sprintf("In memory cache miss. Retrieving key for %s", pubKeyHex))
+		blsKey, err := s.store.RetrieveKey(ctx, pubKeyHex, password)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to retrieve key: %v", err))
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		s.keyCache[pubKeyHex] = blsKey
+	}
+	blsKey := s.keyCache[pubKeyHex]
+	
+	g1Bytes := req.GetData()
+	g1Point := new(crypto.G1Point)
+	g1Point = g1Point.Deserialize(g1Bytes)
+
+	sig := blsKey.SignHashedToCurveMessage(g1Point.G1Affine)
+	return &v1.SignG1Response{Signature: sig.Serialize()}, nil
+}
