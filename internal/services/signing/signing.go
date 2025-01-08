@@ -92,7 +92,7 @@ func (s *Service) SignG1(
 		s.keyCache[pubKeyHex] = blsKey
 	}
 	blsKey := s.keyCache[pubKeyHex]
-	
+
 	g1Bytes := req.GetData()
 	g1Point := new(crypto.G1Point)
 	g1Point = g1Point.Deserialize(g1Bytes)
