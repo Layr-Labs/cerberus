@@ -98,5 +98,6 @@ func (s *Service) SignG1(
 	g1Point = g1Point.Deserialize(g1Bytes)
 
 	sig := blsKey.SignHashedToCurveMessage(g1Point.G1Affine)
+	s.logger.Info(fmt.Sprintf("Signed a G1 message successfully using %s", pubKeyHex))
 	return &v1.SignG1Response{Signature: sig.Serialize()}, nil
 }
