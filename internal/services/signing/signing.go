@@ -83,6 +83,15 @@ func (s *Service) SignG1(
 	pubKeyHex := common.Trim0x(req.GetPublicKeyG1())
 	password := req.GetPassword()
 
+	if pubKeyHex == "" {
+		return nil, status.Error(codes.InvalidArgument, "public key is required")
+	}
+
+	g1Bytes := req.GetData()
+	if len(g1Bytes) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "data must be > 0 bytes")
+	}
+
 	if _, ok := s.keyCache[pubKeyHex]; !ok {
 		s.logger.Info(fmt.Sprintf("In memory cache miss. Retrieving key for %s", pubKeyHex))
 		blsKey, err := s.store.RetrieveKey(ctx, pubKeyHex, password)
@@ -94,7 +103,6 @@ func (s *Service) SignG1(
 	}
 	blsKey := s.keyCache[pubKeyHex]
 
-	g1Bytes := req.GetData()
 	g1Point := new(crypto.G1Point)
 	g1Point = g1Point.Deserialize(g1Bytes)
 
