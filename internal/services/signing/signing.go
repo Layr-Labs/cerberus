@@ -71,7 +71,8 @@ func (s *Service) SignGeneric(
 	// Sign the data with the private key
 	sig := blsKey.SignMessage(byteArray)
 	s.logger.Info(fmt.Sprintf("Signed a message successfully using %s", pubKeyHex))
-	return &v1.SignGenericResponse{Signature: sig.Serialize()}, nil
+	signatureBytes := sig.RawBytes()
+	return &v1.SignGenericResponse{Signature: signatureBytes[:]}, nil
 }
 
 func (s *Service) SignG1(
@@ -99,5 +100,6 @@ func (s *Service) SignG1(
 
 	sig := blsKey.SignHashedToCurveMessage(g1Point.G1Affine)
 	s.logger.Info(fmt.Sprintf("Signed a G1 message successfully using %s", pubKeyHex))
-	return &v1.SignG1Response{Signature: sig.Serialize()}, nil
+	signatureBytes := sig.RawBytes()
+	return &v1.SignG1Response{Signature: signatureBytes[:]}, nil
 }
