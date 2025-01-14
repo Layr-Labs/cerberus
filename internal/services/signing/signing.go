@@ -18,11 +18,11 @@ import (
 )
 
 type Service struct {
-	config   *configuration.Configuration
-	logger   *slog.Logger
-	store    store.Store
-	metrics  metrics.Recorder
-	keyCache map[string]*crypto.KeyPair
+	config  *configuration.Configuration
+	logger  *slog.Logger
+	store   store.Store
+	metrics metrics.Recorder
+	keyMap  KeyStoreMap
 	v1.UnimplementedSignerServer
 }
 
@@ -33,11 +33,11 @@ func NewService(
 	metrics metrics.Recorder,
 ) *Service {
 	return &Service{
-		config:   config,
-		store:    store,
-		metrics:  metrics,
-		logger:   logger.With("component", "signing"),
-		keyCache: make(map[string]*crypto.KeyPair),
+		config:  config,
+		store:   store,
+		metrics: metrics,
+		logger:  logger.With("component", "signing"),
+		keyMap:  KeyStoreMap{},
 	}
 }
 
@@ -49,16 +49,16 @@ func (s *Service) SignGeneric(
 	pubKeyHex := common.Trim0x(req.GetPublicKeyG1())
 	password := req.GetPassword()
 
-	if _, ok := s.keyCache[pubKeyHex]; !ok {
+	if _, ok := s.keyMap.Load(pubKeyHex); !ok {
 		s.logger.Info(fmt.Sprintf("In memory cache miss. Retrieving key for %s", pubKeyHex))
 		blsKey, err := s.store.RetrieveKey(ctx, pubKeyHex, password)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to retrieve key: %v", err))
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		s.keyCache[pubKeyHex] = blsKey
+		s.keyMap.Store(pubKeyHex, blsKey)
 	}
-	blsKey := s.keyCache[pubKeyHex]
+	blsKey, _ := s.keyMap.Load(pubKeyHex)
 
 	data := req.GetData()
 	if len(data) > 32 {
@@ -92,16 +92,16 @@ func (s *Service) SignG1(
 		return nil, status.Error(codes.InvalidArgument, "data must be > 0 bytes")
 	}
 
-	if _, ok := s.keyCache[pubKeyHex]; !ok {
+	if _, ok := s.keyMap.Load(pubKeyHex); !ok {
 		s.logger.Info(fmt.Sprintf("In memory cache miss. Retrieving key for %s", pubKeyHex))
 		blsKey, err := s.store.RetrieveKey(ctx, pubKeyHex, password)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to retrieve key: %v", err))
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		s.keyCache[pubKeyHex] = blsKey
+		s.keyMap.Store(pubKeyHex, blsKey)
 	}
-	blsKey := s.keyCache[pubKeyHex]
+	blsKey, _ := s.keyMap.Load(pubKeyHex)
 
 	g1Point := new(crypto.G1Point)
 	g1Point = g1Point.Deserialize(g1Bytes)
