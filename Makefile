@@ -41,3 +41,8 @@ docker: ## runs docker build
 migrate: ## runs database migrations
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	migrate -path internal/database/migrations/ -database "postgres://user:password@localhost:5432/cerberus?sslmode=disable" --verbose up
+
+.PHONY: create-migration
+create-migration: ## creates a new database migration
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	migrate create -dir internal/database/migrations/ -ext sql $(name)

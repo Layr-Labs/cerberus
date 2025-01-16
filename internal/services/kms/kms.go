@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	v1 "github.com/Layr-Labs/cerberus-api/pkg/api/v1"
+	"github.com/google/uuid"
 
 	"github.com/Layr-Labs/cerberus/internal/common"
 	"github.com/Layr-Labs/cerberus/internal/configuration"
@@ -75,9 +76,17 @@ func (k *Service) GenerateKeyPair(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Generate a new API key and hash
+	apiKey, apiKeyHash, err := generateNewAPIKeyAndHash()
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to generate API key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	err = k.keyMetadataRepo.Create(ctx, &model.KeyMetadata{
 		PublicKeyG1: pubKeyHex,
 		PublicKeyG2: g2PubKey,
+		ApiKeyHash:  apiKeyHash,
 	})
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save key metadata: %v", err))
@@ -94,6 +103,7 @@ func (k *Service) GenerateKeyPair(
 		PublicKeyG2: g2PubKey,
 		PrivateKey:  privKeyHex,
 		Mnemonic:    keyPair.Mnemonic,
+		ApiKey:      apiKey,
 	}, nil
 }
 
@@ -149,16 +159,28 @@ func (k *Service) ImportKey(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Generate a new API key and hash
+	apiKey, apiKeyHash, err := generateNewAPIKeyAndHash()
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to generate API key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	err = k.keyMetadataRepo.Create(ctx, &model.KeyMetadata{
 		PublicKeyG1: pubKeyHex,
 		PublicKeyG2: g2PubKey,
+		ApiKeyHash:  apiKeyHash,
 	})
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save key metadata: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &v1.ImportKeyResponse{PublicKeyG1: pubKeyHex, PublicKeyG2: g2PubKey}, nil
+	return &v1.ImportKeyResponse{
+		PublicKeyG1: pubKeyHex,
+		PublicKeyG2: g2PubKey,
+		ApiKey:      apiKey,
+	}, nil
 }
 
 func (k *Service) ListKeys(
@@ -196,4 +218,14 @@ func (k *Service) GetKeyMetadata(
 		CreatedAt:   metadata.CreatedAt.Unix(),
 		UpdatedAt:   metadata.UpdatedAt.Unix(),
 	}, nil
+}
+
+func generateNewAPIKeyAndHash() (string, string, error) {
+	newUUID, err := uuid.NewV7()
+	if err != nil {
+		return "", "", err
+	}
+	apiKey := newUUID.String()
+	apiKeyHash := common.CreateSHA256Hash(apiKey)
+	return apiKey, apiKeyHash, nil
 }

@@ -117,7 +117,11 @@ func Start(config *configuration.Configuration, logger *slog.Logger) {
 
 	// Register metrics middleware
 	metricsMiddleware := middleware.NewMetricsMiddleware(registry, rpcMetrics)
-	opts = append(opts, grpc.UnaryInterceptor(metricsMiddleware.UnaryServerInterceptor()))
+	authInterceptor := middleware.AuthInterceptor("signer.v1.Signer", keyMetadataRepo)
+	opts = append(
+		opts,
+		grpc.ChainUnaryInterceptor(metricsMiddleware.UnaryServerInterceptor(), authInterceptor),
+	)
 
 	s := grpc.NewServer(opts...)
 	kmsService := kms.NewService(config, keystore, keyMetadataRepo, logger, rpcMetrics)

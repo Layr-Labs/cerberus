@@ -265,3 +265,31 @@ func TestKeyMetadataRepository_List(t *testing.T) {
 		assert.Equal(t, "test_key_1", results[1].PublicKeyG1)
 	})
 }
+
+func TestKeyMetadataRepository_UpdateAPIKeyHash(t *testing.T) {
+	testDB := SetupTestDB(t)
+	// No need to defer db.Close() as it's handled by t.Cleanup
+
+	// Create initial test data
+	initialKey := &model.KeyMetadata{
+		PublicKeyG1: "test_key_1",
+		PublicKeyG2: "test_key_2",
+		ApiKeyHash:  "test_api_key_hash",
+	}
+	err := testDB.Repo.Create(context.Background(), initialKey)
+	require.NoError(t, err)
+
+	metadata := &model.KeyMetadata{
+		PublicKeyG1: "test_key_1",
+		ApiKeyHash:  "test_api_key_hash_2",
+	}
+
+	err = testDB.Repo.UpdateAPIKeyHash(context.Background(), metadata)
+	require.NoError(t, err)
+
+	// Verify the update
+	result, err := testDB.Repo.Get(context.Background(), metadata.PublicKeyG1)
+	assert.NoError(t, err)
+	assert.Equal(t, metadata.ApiKeyHash, result.ApiKeyHash)
+	assert.WithinDuration(t, time.Now(), result.UpdatedAt, 2*time.Second)
+}

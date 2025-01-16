@@ -23,12 +23,12 @@ func NewKeyMetadataRepository(db *sql.DB) repository.KeyMetadataRepository {
 const (
 	createKeyMetadataQuery = `
         INSERT INTO public.keys_metadata (
-            public_key_g1, public_key_g2, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4)
+            public_key_g1, public_key_g2, created_at, updated_at, api_key_hash
+        ) VALUES ($1, $2, $3, $4, $5)
     `
 
 	getKeyMetadataQuery = `
-        SELECT public_key_g1, public_key_g2, created_at, updated_at
+        SELECT public_key_g1, public_key_g2, created_at, updated_at, api_key_hash, locked
         FROM public.keys_metadata
         WHERE public_key_g1 = $1
     `
@@ -37,6 +37,12 @@ const (
         UPDATE public.keys_metadata
         SET updated_at = $1
         WHERE public_key_g1 = $2
+    `
+
+	updateAPIKeyHashQuery = `
+        UPDATE public.keys_metadata
+        SET api_key_hash = $1, updated_at = $2
+        WHERE public_key_g1 = $3
     `
 
 	deleteKeyMetadataQuery = `
@@ -68,6 +74,7 @@ func (r *keyMetadataRepo) Create(ctx context.Context, metadata *model.KeyMetadat
 		metadata.PublicKeyG2,
 		metadata.CreatedAt,
 		metadata.UpdatedAt,
+		metadata.ApiKeyHash,
 	)
 	return err
 }
@@ -79,6 +86,8 @@ func (r *keyMetadataRepo) Get(ctx context.Context, publicKeyG1 string) (*model.K
 		&metadata.PublicKeyG2,
 		&metadata.CreatedAt,
 		&metadata.UpdatedAt,
+		&metadata.ApiKeyHash,
+		&metadata.Locked,
 	)
 	if err == sql.ErrNoRows {
 		return nil, errors.New("key metadata not found")
@@ -111,6 +120,24 @@ func (r *keyMetadataRepo) Update(ctx context.Context, metadata *model.KeyMetadat
 		return errors.New("key metadata not found")
 	}
 	return nil
+}
+
+func (r *keyMetadataRepo) UpdateAPIKeyHash(ctx context.Context, metadata *model.KeyMetadata) error {
+	if metadata.PublicKeyG1 == "" {
+		return errors.New("public key g1 is required")
+	}
+	if metadata.ApiKeyHash == "" {
+		return errors.New("api key hash is required")
+	}
+
+	metadata.UpdatedAt = time.Now().UTC()
+
+	_, err := r.db.ExecContext(ctx, updateAPIKeyHashQuery,
+		metadata.ApiKeyHash,
+		metadata.UpdatedAt,
+		metadata.PublicKeyG1,
+	)
+	return err
 }
 
 func (r *keyMetadataRepo) Delete(ctx context.Context, publicKeyG1 string) error {
