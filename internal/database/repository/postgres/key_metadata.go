@@ -96,7 +96,7 @@ func (r *keyMetadataRepo) Get(ctx context.Context, publicKeyG1 string) (*model.K
 		&metadata.Locked,
 	)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("key metadata not found")
+		return nil, repository.ErrKeyNotFound
 	}
 	if err != nil {
 		return nil, err

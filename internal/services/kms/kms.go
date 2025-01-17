@@ -139,22 +139,37 @@ func (k *Service) ImportKey(
 		}
 	}
 
+	ks := &keystore.KeyPair{
+		PrivateKey: pkBytes,
+	}
+
+	g1PubKey, err := ks.GetG1PublicKey(curve.BN254)
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to get G1 public key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	g2PubKey, err := ks.GetG2PublicKey(curve.BN254)
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to get G2 public key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = k.keyMetadataRepo.Get(ctx, g1PubKey)
+	if err == nil {
+		return nil, status.Error(codes.AlreadyExists, "key already exists")
+	}
+	if err != repository.ErrKeyNotFound {
+		k.logger.Error(fmt.Sprintf("Failed to get key metadata: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	pubKeyHex, err := k.store.StoreKey(
 		ctx,
 		&keystore.KeyPair{PrivateKey: pkBytes, Password: password},
 	)
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save BLS key pair to file: %v", err))
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	ks := &keystore.KeyPair{
-		PrivateKey: pkBytes,
-	}
-
-	g2PubKey, err := ks.GetG2PublicKey(curve.BN254)
-	if err != nil {
-		k.logger.Error(fmt.Sprintf("Failed to get G2 public key: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
