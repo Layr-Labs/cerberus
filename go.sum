@@ -20,8 +20,8 @@ github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg6
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Layr-Labs/bn254-keystore-go v0.0.0-20250107020618-26bd412fae87 h1:EkaBNT0o8RTgtFeYSKaoNHNbnCVxrcsAyRpUeN29hiQ=
 github.com/Layr-Labs/bn254-keystore-go v0.0.0-20250107020618-26bd412fae87/go.mod h1:7J8hptSX8cFq7KmVb+rEO5aEifj7E44c3i0afIyr4WA=
-github.com/Layr-Labs/cerberus-api v0.0.2-0.20250108174619-d5e1eb03fbd5 h1:s24M6HYObEuV9OSY36jUM09kp5fOhuz/g1ev2qWDPzU=
-github.com/Layr-Labs/cerberus-api v0.0.2-0.20250108174619-d5e1eb03fbd5/go.mod h1:Lm4fhzy0S3P7GjerzuseGaBFVczsIKmEhIjcT52Hluo=
+github.com/Layr-Labs/cerberus-api v0.0.2-0.20250117193600-e69c5e8b08fd h1:prMzW4BY6KZtWEanf5EIsyHzIZKCNV2mVIXrE6glRRM=
+github.com/Layr-Labs/cerberus-api v0.0.2-0.20250117193600-e69c5e8b08fd/go.mod h1:Lm4fhzy0S3P7GjerzuseGaBFVczsIKmEhIjcT52Hluo=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/aws/aws-sdk-go-v2 v1.32.5 h1:U8vdWJuY7ruAkzaOdD7guwJjD06YSKmnKCJs7s3IkIo=

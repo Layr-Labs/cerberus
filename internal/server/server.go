@@ -1,31 +1,23 @@
 package server
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
 	"net"
-	"net/http"
 	"os"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 
 	v1 "github.com/Layr-Labs/cerberus-api/pkg/api/v1"
 
 	"github.com/Layr-Labs/cerberus/internal/configuration"
-	"github.com/Layr-Labs/cerberus/internal/database"
-	"github.com/Layr-Labs/cerberus/internal/database/repository/postgres"
-	"github.com/Layr-Labs/cerberus/internal/metrics"
-	"github.com/Layr-Labs/cerberus/internal/middleware"
+	"github.com/Layr-Labs/cerberus/internal/services/admin"
 	"github.com/Layr-Labs/cerberus/internal/services/kms"
 	"github.com/Layr-Labs/cerberus/internal/services/signing"
-	"github.com/Layr-Labs/cerberus/internal/store"
-	"github.com/Layr-Labs/cerberus/internal/store/awssecretmanager"
-	"github.com/Layr-Labs/cerberus/internal/store/filesystem"
-	"github.com/Layr-Labs/cerberus/internal/store/googlesm"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -34,111 +26,185 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Start(config *configuration.Configuration, logger *slog.Logger) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", config.GrpcPort))
+type Server struct {
+	resources *SharedResources
+	servers   []*grpc.Server
+	wg        sync.WaitGroup
+}
+
+// RegisterService represents a function type for service registration
+type RegisterService func(*grpc.Server, *SharedResources)
+
+// AddServiceOnPort adds a new gRPC service on the specified port
+func (s *Server) AddServiceOnPort(
+	serverCfg *GrpcServerConfig,
+	registerService RegisterService,
+) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", serverCfg.Port))
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to listen: %v", err))
-		os.Exit(1)
-	}
-
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-	registry.MustRegister(collectors.NewGoCollector())
-	rpcMetrics := metrics.NewRPCServerMetrics("cerberus", registry)
-
-	go startMetricsServer(registry, config.MetricsPort, logger)
-
-	var keystore store.Store
-	switch config.StorageType {
-	case configuration.FileSystemStorageType:
-		keystore = filesystem.NewStore(config.KeystoreDir, logger)
-	case configuration.AWSSecretManagerStorageType:
-		switch config.AWSAuthenticationMode {
-		case configuration.EnvironmentAWSAuthenticationMode:
-			keystore, err = awssecretmanager.NewStoreWithEnv(
-				config.AWSRegion,
-				config.AWSProfile,
-				logger,
-			)
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create AWS Secret Manager store: %v", err))
-				os.Exit(1)
-			}
-			logger.Info("Using environment credentials for AWS Secret Manager")
-		case configuration.SpecifiedAWSAuthenticationMode:
-			keystore, err = awssecretmanager.NewStoreWithSpecifiedCredentials(
-				config.AWSRegion,
-				config.AWSAccessKeyID,
-				config.AWSSecretAccessKey,
-				logger,
-			)
-			if err != nil {
-				logger.Error(fmt.Sprintf("Failed to create AWS Secret Manager store: %v", err))
-				os.Exit(1)
-			}
-			logger.Info("Using specified credentials for AWS Secret Manager")
-		}
-	case configuration.GoogleSecretManagerStorageType:
-		keystore, err = googlesm.NewKeystore(config.GCPProjectID, logger)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Failed to create Google Secret Manager store: %v", err))
-			os.Exit(1)
-		}
-	default:
-		logger.Error(fmt.Sprintf("Unsupported storage type: %s", config.StorageType))
-		os.Exit(1)
+		return fmt.Errorf("failed to listen on port %d: %v", serverCfg.Port, err)
 	}
 
 	var opts []grpc.ServerOption
-	if config.TLSCACert != "" && config.TLSServerKey != "" {
-		creds, err := credentials.NewServerTLSFromFile(config.TLSCACert, config.TLSServerKey)
+	if serverCfg.TLSCACert != "" && serverCfg.TLSServerKey != "" {
+		creds, err := credentials.NewServerTLSFromFile(serverCfg.TLSCACert, serverCfg.TLSServerKey)
 		if err != nil {
 			log.Fatalf("Failed to load TLS certificates: %v", err)
 		}
-		logger.Info("Server-side TLS support enabled")
+		s.resources.Logger.Info("Server-side TLS support enabled")
 
 		opts = append(opts, grpc.Creds(creds))
 	}
 
-	// Initialize database
-	db, err := sql.Open("postgres", config.PostgresDatabaseURL)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to database: %v", err))
-		os.Exit(1)
-	}
-	defer db.Close()
+	opts = append(
+		opts,
+		grpc.ChainUnaryInterceptor(s.resources.GrpcMiddleware...),
+	)
 
-	if err := database.MigrateDB(config.PostgresDatabaseURL, logger); err != nil {
-		logger.Error(fmt.Sprintf("Failed to migrate database: %v", err))
-		os.Exit(1)
-	}
+	grpcServer := grpc.NewServer(opts...)
 
-	keyMetadataRepo := postgres.NewKeyMetadataRepository(db)
+	// Register the service with shared resources
+	registerService(grpcServer, s.resources)
 
-	// Register metrics middleware
-	metricsMiddleware := middleware.NewMetricsMiddleware(registry, rpcMetrics)
-	opts = append(opts, grpc.UnaryInterceptor(metricsMiddleware.UnaryServerInterceptor()))
+	// Add to servers list
+	s.servers = append(s.servers, grpcServer)
 
-	s := grpc.NewServer(opts...)
-	kmsService := kms.NewService(config, keystore, keyMetadataRepo, logger, rpcMetrics)
-	signingService := signing.NewService(config, keystore, logger, rpcMetrics)
+	// Start the server in a goroutine
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Printf("Failed to serve on port %d: %v", serverCfg.Port, err)
+		}
+	}()
 
-	v1.RegisterKeyManagerServer(s, kmsService)
-	v1.RegisterSignerServer(s, signingService)
-
-	// Register the reflection service
-	reflection.Register(s)
-
-	logger.Info(fmt.Sprintf("Starting gRPC server on port %s...", config.GrpcPort))
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	return nil
 }
 
-func startMetricsServer(r *prometheus.Registry, port string, logger *slog.Logger) {
-	http.Handle("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}))
-	logger.Info(fmt.Sprintf("Starting metrics server on port %s...", port))
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil); err != nil {
-		logger.Error(fmt.Sprintf("Failed to start metrics server: %v", err))
+// Start starts all registered services
+func (s *Server) Start(ctx context.Context) error {
+	// Create channel for shutdown signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for either context cancellation or shutdown signal
+	select {
+	case <-ctx.Done():
+		log.Println("Context cancelled, initiating shutdown...")
+	case sig := <-sigChan:
+		log.Printf("Received signal %v, initiating shutdown...", sig)
+	}
+
+	// Create context with timeout for graceful shutdown
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var wg sync.WaitGroup
+	for _, server := range s.servers {
+		wg.Add(1)
+		go func(srv *grpc.Server) {
+			defer wg.Done()
+			srv.GracefulStop()
+		}(server)
+	}
+
+	// Wait for all servers to stop
+	serverDone := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(serverDone)
+	}()
+
+	// Wait for server shutdown with timeout
+	select {
+	case <-serverDone:
+		log.Println("All gRPC servers stopped successfully")
+	case <-shutdownCtx.Done():
+		log.Println("Shutdown timeout reached, forcing server stop")
+		for _, server := range s.servers {
+			server.Stop()
+		}
+	}
+
+	return nil
+}
+
+func Start(config *configuration.Configuration, logger *slog.Logger) {
+	server := NewServer(config, logger)
+
+	kmsService := kms.NewService(
+		config,
+		server.resources.KeyStore,
+		server.resources.KeyMetadataRepo,
+		logger,
+		server.resources.RpcMetrics,
+	)
+	signingService := signing.NewService(
+		config,
+		server.resources.KeyStore,
+		logger,
+		server.resources.RpcMetrics,
+	)
+
+	logger.Info(fmt.Sprintf("Starting gRPC server on port %d...", config.GrpcPort))
+	err := server.AddServiceOnPort(&GrpcServerConfig{
+		Port: config.GrpcPort,
+	}, func(s *grpc.Server, resources *SharedResources) {
+		v1.RegisterKeyManagerServer(s, kmsService)
+		v1.RegisterSignerServer(s, signingService)
+
+		// Register reflection service
+		reflection.Register(s)
+	})
+
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to add service on port %d: %v", config.GrpcPort, err))
+		os.Exit(1)
+	}
+
+	if config.EnableAdmin {
+		adminService := admin.NewService(
+			config,
+			logger,
+			server.resources.RpcMetrics,
+			server.resources.KeyMetadataRepo,
+		)
+
+		logger.Info(fmt.Sprintf("Starting Admin server on port %d...", config.AdminPort))
+		err = server.AddServiceOnPort(&GrpcServerConfig{
+			Port: config.AdminPort,
+		}, func(s *grpc.Server, resources *SharedResources) {
+			v1.RegisterAdminServer(s, adminService)
+
+			// Register reflection service
+			reflection.Register(s)
+		})
+
+		if err != nil {
+			logger.Error(
+				fmt.Sprintf("Failed to admin service on port %d: %v", config.AdminPort, err),
+			)
+			os.Exit(1)
+		}
+	}
+
+	// Start all services
+	// Create a context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start all services
+	if err := server.Start(ctx); err != nil {
+		logger.Error(fmt.Sprintf("Failed to start servers: %v", err))
+		os.Exit(1)
+	}
+
+}
+
+// NewServer creates a new Server instance with shared resources
+func NewServer(config *configuration.Configuration, logger *slog.Logger) *Server {
+	return &Server{
+		resources: NewSharedResources(config, logger),
+		servers:   make([]*grpc.Server, 0),
 	}
 }

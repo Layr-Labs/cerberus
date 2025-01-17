@@ -23,18 +23,32 @@ var (
 		EnvVars: []string{"KEYSTORE_DIR"},
 	}
 
-	grpcPortFlag = &cli.StringFlag{
+	grpcPortFlag = &cli.IntFlag{
 		Name:    "grpc-port",
 		Usage:   "Port for the gRPC server",
-		Value:   "50051",
+		Value:   50051,
 		EnvVars: []string{"GRPC_PORT"},
 	}
 
-	metricsPortFlag = &cli.StringFlag{
+	adminPortFlag = &cli.IntFlag{
+		Name:    "admin-port",
+		Usage:   "Port for the admin server",
+		Value:   50052,
+		EnvVars: []string{"ADMIN_PORT"},
+	}
+
+	metricsPortFlag = &cli.IntFlag{
 		Name:    "metrics-port",
 		Usage:   "Port for the metrics server",
-		Value:   "9091",
+		Value:   9091,
 		EnvVars: []string{"METRICS_PORT"},
+	}
+
+	enableAdminFlag = &cli.BoolFlag{
+		Name:    "enable-admin",
+		Usage:   "Enable the admin server",
+		Value:   false,
+		EnvVars: []string{"ENABLE_ADMIN"},
 	}
 
 	logLevelFlag = &cli.StringFlag{
@@ -142,6 +156,7 @@ func main() {
 		logFormatFlag,
 		logLevelFlag,
 		metricsPortFlag,
+		enableAdminFlag,
 		tlsCaCertFlag,
 		tlsServerKeyFlag,
 		storageTypeFlag,
@@ -152,6 +167,7 @@ func main() {
 		awsSecretAccessKeyFlag,
 		gcpProjectIDFlag,
 		postgresDatabaseURLFlag,
+		adminPortFlag,
 	}
 	sort.Sort(cli.FlagsByName(app.Flags))
 
@@ -168,8 +184,9 @@ func main() {
 
 func start(c *cli.Context) error {
 	keystoreDir := c.String(keystoreDirFlag.Name)
-	grpcPort := c.String(grpcPortFlag.Name)
-	metricsPort := c.String(metricsPortFlag.Name)
+	grpcPort := c.Int(grpcPortFlag.Name)
+	adminPort := c.Int(adminPortFlag.Name)
+	metricsPort := c.Int(metricsPortFlag.Name)
 	logLevel := c.String(logLevelFlag.Name)
 	logFormat := c.String(logFormatFlag.Name)
 	tlsCaCert := c.String(tlsCaCertFlag.Name)
@@ -182,9 +199,11 @@ func start(c *cli.Context) error {
 	awsSecretAccessKey := c.String(awsSecretAccessKeyFlag.Name)
 	gcpProjectID := c.String(gcpProjectIDFlag.Name)
 	postgresDatabaseURL := c.String(postgresDatabaseURLFlag.Name)
+	enableAdmin := c.Bool(enableAdminFlag.Name)
 	cfg := &configuration.Configuration{
 		KeystoreDir:           keystoreDir,
 		GrpcPort:              grpcPort,
+		AdminPort:             adminPort,
 		MetricsPort:           metricsPort,
 		TLSCACert:             tlsCaCert,
 		TLSServerKey:          tlsServerKey,
@@ -196,6 +215,7 @@ func start(c *cli.Context) error {
 		AWSSecretAccessKey:    awsSecretAccessKey,
 		GCPProjectID:          gcpProjectID,
 		PostgresDatabaseURL:   postgresDatabaseURL,
+		EnableAdmin:           enableAdmin,
 	}
 
 	if err := cfg.Validate(); err != nil {

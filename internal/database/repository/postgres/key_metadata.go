@@ -23,12 +23,12 @@ func NewKeyMetadataRepository(db *sql.DB) repository.KeyMetadataRepository {
 const (
 	createKeyMetadataQuery = `
         INSERT INTO public.keys_metadata (
-            public_key_g1, public_key_g2, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4)
+            public_key_g1, public_key_g2, created_at, updated_at, api_key_hash
+        ) VALUES ($1, $2, $3, $4, $5)
     `
 
 	getKeyMetadataQuery = `
-        SELECT public_key_g1, public_key_g2, created_at, updated_at
+        SELECT public_key_g1, public_key_g2, created_at, updated_at, api_key_hash, locked
         FROM public.keys_metadata
         WHERE public_key_g1 = $1
     `
@@ -39,13 +39,25 @@ const (
         WHERE public_key_g1 = $2
     `
 
+	updateAPIKeyHashQuery = `
+        UPDATE public.keys_metadata
+        SET api_key_hash = $1, updated_at = $2
+        WHERE public_key_g1 = $3
+    `
+
+	updateLockStatusQuery = `
+        UPDATE public.keys_metadata
+        SET locked = $1, updated_at = $2
+        WHERE public_key_g1 = $3
+    `
+
 	deleteKeyMetadataQuery = `
         DELETE FROM public.keys_metadata
         WHERE public_key_g1 = $1
     `
 
-	listKeyMetadataQuery = `
-        SELECT public_key_g1, public_key_g2, created_at, updated_at
+	listAllKeysQuery = `
+        SELECT public_key_g1, public_key_g2, created_at, updated_at, locked
         FROM public.keys_metadata
         ORDER BY created_at DESC
     `
@@ -68,6 +80,7 @@ func (r *keyMetadataRepo) Create(ctx context.Context, metadata *model.KeyMetadat
 		metadata.PublicKeyG2,
 		metadata.CreatedAt,
 		metadata.UpdatedAt,
+		metadata.ApiKeyHash,
 	)
 	return err
 }
@@ -79,9 +92,11 @@ func (r *keyMetadataRepo) Get(ctx context.Context, publicKeyG1 string) (*model.K
 		&metadata.PublicKeyG2,
 		&metadata.CreatedAt,
 		&metadata.UpdatedAt,
+		&metadata.ApiKeyHash,
+		&metadata.Locked,
 	)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("key metadata not found")
+		return nil, repository.ErrKeyNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -113,6 +128,29 @@ func (r *keyMetadataRepo) Update(ctx context.Context, metadata *model.KeyMetadat
 	return nil
 }
 
+func (r *keyMetadataRepo) UpdateAPIKeyHash(
+	ctx context.Context,
+	publicKeyG1 string,
+	apiKeyHash string,
+) error {
+	if publicKeyG1 == "" {
+		return errors.New("public key g1 is required")
+	}
+
+	if apiKeyHash == "" {
+		return errors.New("api key hash is required")
+	}
+
+	updatedAt := time.Now().UTC()
+
+	_, err := r.db.ExecContext(ctx, updateAPIKeyHashQuery,
+		apiKeyHash,
+		updatedAt,
+		publicKeyG1,
+	)
+	return err
+}
+
 func (r *keyMetadataRepo) Delete(ctx context.Context, publicKeyG1 string) error {
 	if publicKeyG1 == "" {
 		return errors.New("public key g1 is required")
@@ -134,7 +172,7 @@ func (r *keyMetadataRepo) Delete(ctx context.Context, publicKeyG1 string) error 
 }
 
 func (r *keyMetadataRepo) List(ctx context.Context) ([]*model.KeyMetadata, error) {
-	rows, err := r.db.QueryContext(ctx, listKeyMetadataQuery)
+	rows, err := r.db.QueryContext(ctx, listAllKeysQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -148,6 +186,7 @@ func (r *keyMetadataRepo) List(ctx context.Context) ([]*model.KeyMetadata, error
 			&m.PublicKeyG2,
 			&m.CreatedAt,
 			&m.UpdatedAt,
+			&m.Locked,
 		)
 		if err != nil {
 			return nil, err
@@ -159,4 +198,19 @@ func (r *keyMetadataRepo) List(ctx context.Context) ([]*model.KeyMetadata, error
 		return nil, err
 	}
 	return metadata, nil
+}
+
+func (r *keyMetadataRepo) UpdateLockStatus(
+	ctx context.Context,
+	publicKeyG1 string,
+	locked bool,
+) error {
+	updatedAt := time.Now().UTC()
+
+	_, err := r.db.ExecContext(ctx, updateLockStatusQuery,
+		locked,
+		updatedAt,
+		publicKeyG1,
+	)
+	return err
 }

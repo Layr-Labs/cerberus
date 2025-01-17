@@ -75,9 +75,17 @@ func (k *Service) GenerateKeyPair(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Generate a new API key and hash
+	apiKey, apiKeyHash, err := common.GenerateNewAPIKeyAndHash()
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to generate API key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	err = k.keyMetadataRepo.Create(ctx, &model.KeyMetadata{
 		PublicKeyG1: pubKeyHex,
 		PublicKeyG2: g2PubKey,
+		ApiKeyHash:  apiKeyHash,
 	})
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save key metadata: %v", err))
@@ -94,6 +102,7 @@ func (k *Service) GenerateKeyPair(
 		PublicKeyG2: g2PubKey,
 		PrivateKey:  privKeyHex,
 		Mnemonic:    keyPair.Mnemonic,
+		ApiKey:      apiKey,
 	}, nil
 }
 
@@ -130,6 +139,31 @@ func (k *Service) ImportKey(
 		}
 	}
 
+	ks := &keystore.KeyPair{
+		PrivateKey: pkBytes,
+	}
+
+	g1PubKey, err := ks.GetG1PublicKey(curve.BN254)
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to get G1 public key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	g2PubKey, err := ks.GetG2PublicKey(curve.BN254)
+	if err != nil {
+		k.logger.Error(fmt.Sprintf("Failed to get G2 public key: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = k.keyMetadataRepo.Get(ctx, g1PubKey)
+	if err == nil {
+		return nil, status.Error(codes.AlreadyExists, "key already exists")
+	}
+	if err != repository.ErrKeyNotFound {
+		k.logger.Error(fmt.Sprintf("Failed to get key metadata: %v", err))
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	pubKeyHex, err := k.store.StoreKey(
 		ctx,
 		&keystore.KeyPair{PrivateKey: pkBytes, Password: password},
@@ -139,26 +173,28 @@ func (k *Service) ImportKey(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	ks := &keystore.KeyPair{
-		PrivateKey: pkBytes,
-	}
-
-	g2PubKey, err := ks.GetG2PublicKey(curve.BN254)
+	// Generate a new API key and hash
+	apiKey, apiKeyHash, err := common.GenerateNewAPIKeyAndHash()
 	if err != nil {
-		k.logger.Error(fmt.Sprintf("Failed to get G2 public key: %v", err))
+		k.logger.Error(fmt.Sprintf("Failed to generate API key: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	err = k.keyMetadataRepo.Create(ctx, &model.KeyMetadata{
 		PublicKeyG1: pubKeyHex,
 		PublicKeyG2: g2PubKey,
+		ApiKeyHash:  apiKeyHash,
 	})
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to save key metadata: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &v1.ImportKeyResponse{PublicKeyG1: pubKeyHex, PublicKeyG2: g2PubKey}, nil
+	return &v1.ImportKeyResponse{
+		PublicKeyG1: pubKeyHex,
+		PublicKeyG2: g2PubKey,
+		ApiKey:      apiKey,
+	}, nil
 }
 
 func (k *Service) ListKeys(

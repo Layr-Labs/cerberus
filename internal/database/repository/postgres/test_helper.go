@@ -82,7 +82,9 @@ func CreateTestContainer(t *testing.T) (*TestContainer, error) {
             public_key_g1 VARCHAR(255) PRIMARY KEY,
             public_key_g2 VARCHAR(255) NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            api_key_hash text,
+            locked boolean DEFAULT false
         );
     `)
 	if err != nil {
