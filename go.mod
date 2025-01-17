@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.33.0
 	github.com/aws/aws-sdk-go-v2/config v1.29.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.53
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.6
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.34.13
 	github.com/consensys/gnark-crypto v0.12.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/uuid v1.6.0
