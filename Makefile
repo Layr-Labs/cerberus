@@ -12,7 +12,7 @@ build:
 .PHONY: start
 start:
 	make build
-	./bin/$(APP_NAME) --log-level=debug
+	./bin/$(APP_NAME) --log-level=debug --enable-admin
 
 .PHONY: fmt
 fmt: ## formats all go files

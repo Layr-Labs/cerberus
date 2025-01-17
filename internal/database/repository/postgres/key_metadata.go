@@ -45,13 +45,19 @@ const (
         WHERE public_key_g1 = $3
     `
 
+	updateLockStatusQuery = `
+        UPDATE public.keys_metadata
+        SET locked = $1, updated_at = $2
+        WHERE public_key_g1 = $3
+    `
+
 	deleteKeyMetadataQuery = `
         DELETE FROM public.keys_metadata
         WHERE public_key_g1 = $1
     `
 
-	listKeyMetadataQuery = `
-        SELECT public_key_g1, public_key_g2, created_at, updated_at
+	listAllKeysQuery = `
+        SELECT public_key_g1, public_key_g2, created_at, updated_at, locked
         FROM public.keys_metadata
         ORDER BY created_at DESC
     `
@@ -122,20 +128,25 @@ func (r *keyMetadataRepo) Update(ctx context.Context, metadata *model.KeyMetadat
 	return nil
 }
 
-func (r *keyMetadataRepo) UpdateAPIKeyHash(ctx context.Context, metadata *model.KeyMetadata) error {
-	if metadata.PublicKeyG1 == "" {
+func (r *keyMetadataRepo) UpdateAPIKeyHash(
+	ctx context.Context,
+	publicKeyG1 string,
+	apiKeyHash string,
+) error {
+	if publicKeyG1 == "" {
 		return errors.New("public key g1 is required")
 	}
-	if metadata.ApiKeyHash == "" {
+
+	if apiKeyHash == "" {
 		return errors.New("api key hash is required")
 	}
 
-	metadata.UpdatedAt = time.Now().UTC()
+	updatedAt := time.Now().UTC()
 
 	_, err := r.db.ExecContext(ctx, updateAPIKeyHashQuery,
-		metadata.ApiKeyHash,
-		metadata.UpdatedAt,
-		metadata.PublicKeyG1,
+		apiKeyHash,
+		updatedAt,
+		publicKeyG1,
 	)
 	return err
 }
@@ -161,7 +172,7 @@ func (r *keyMetadataRepo) Delete(ctx context.Context, publicKeyG1 string) error 
 }
 
 func (r *keyMetadataRepo) List(ctx context.Context) ([]*model.KeyMetadata, error) {
-	rows, err := r.db.QueryContext(ctx, listKeyMetadataQuery)
+	rows, err := r.db.QueryContext(ctx, listAllKeysQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +186,7 @@ func (r *keyMetadataRepo) List(ctx context.Context) ([]*model.KeyMetadata, error
 			&m.PublicKeyG2,
 			&m.CreatedAt,
 			&m.UpdatedAt,
+			&m.Locked,
 		)
 		if err != nil {
 			return nil, err
@@ -186,4 +198,19 @@ func (r *keyMetadataRepo) List(ctx context.Context) ([]*model.KeyMetadata, error
 		return nil, err
 	}
 	return metadata, nil
+}
+
+func (r *keyMetadataRepo) UpdateLockStatus(
+	ctx context.Context,
+	publicKeyG1 string,
+	locked bool,
+) error {
+	updatedAt := time.Now().UTC()
+
+	_, err := r.db.ExecContext(ctx, updateLockStatusQuery,
+		locked,
+		updatedAt,
+		publicKeyG1,
+	)
+	return err
 }

@@ -279,17 +279,14 @@ func TestKeyMetadataRepository_UpdateAPIKeyHash(t *testing.T) {
 	err := testDB.Repo.Create(context.Background(), initialKey)
 	require.NoError(t, err)
 
-	metadata := &model.KeyMetadata{
-		PublicKeyG1: "test_key_1",
-		ApiKeyHash:  "test_api_key_hash_2",
-	}
+	apiKeyHash := "test_api_key_hash_2"
 
-	err = testDB.Repo.UpdateAPIKeyHash(context.Background(), metadata)
+	err = testDB.Repo.UpdateAPIKeyHash(context.Background(), initialKey.PublicKeyG1, apiKeyHash)
 	require.NoError(t, err)
 
 	// Verify the update
-	result, err := testDB.Repo.Get(context.Background(), metadata.PublicKeyG1)
+	result, err := testDB.Repo.Get(context.Background(), initialKey.PublicKeyG1)
 	assert.NoError(t, err)
-	assert.Equal(t, metadata.ApiKeyHash, result.ApiKeyHash)
+	assert.Equal(t, apiKeyHash, result.ApiKeyHash)
 	assert.WithinDuration(t, time.Now(), result.UpdatedAt, 2*time.Second)
 }

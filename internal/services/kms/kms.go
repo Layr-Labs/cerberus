@@ -8,7 +8,6 @@ import (
 	"math/big"
 
 	v1 "github.com/Layr-Labs/cerberus-api/pkg/api/v1"
-	"github.com/google/uuid"
 
 	"github.com/Layr-Labs/cerberus/internal/common"
 	"github.com/Layr-Labs/cerberus/internal/configuration"
@@ -77,7 +76,7 @@ func (k *Service) GenerateKeyPair(
 	}
 
 	// Generate a new API key and hash
-	apiKey, apiKeyHash, err := generateNewAPIKeyAndHash()
+	apiKey, apiKeyHash, err := common.GenerateNewAPIKeyAndHash()
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to generate API key: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
@@ -160,7 +159,7 @@ func (k *Service) ImportKey(
 	}
 
 	// Generate a new API key and hash
-	apiKey, apiKeyHash, err := generateNewAPIKeyAndHash()
+	apiKey, apiKeyHash, err := common.GenerateNewAPIKeyAndHash()
 	if err != nil {
 		k.logger.Error(fmt.Sprintf("Failed to generate API key: %v", err))
 		return nil, status.Error(codes.Internal, err.Error())
@@ -218,14 +217,4 @@ func (k *Service) GetKeyMetadata(
 		CreatedAt:   metadata.CreatedAt.Unix(),
 		UpdatedAt:   metadata.UpdatedAt.Unix(),
 	}, nil
-}
-
-func generateNewAPIKeyAndHash() (string, string, error) {
-	newUUID, err := uuid.NewV7()
-	if err != nil {
-		return "", "", err
-	}
-	apiKey := newUUID.String()
-	apiKeyHash := common.CreateSHA256Hash(apiKey)
-	return apiKey, apiKeyHash, nil
 }

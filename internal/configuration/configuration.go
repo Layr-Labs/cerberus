@@ -31,8 +31,11 @@ type Configuration struct {
 	// Google Secrets Manager storage parameters
 	GCPProjectID string
 
-	GrpcPort    string
-	MetricsPort string
+	GrpcPort    int
+	MetricsPort int
+	AdminPort   int
+
+	EnableAdmin bool
 
 	TLSCACert    string
 	TLSServerKey string
@@ -72,11 +75,11 @@ func (s *Configuration) Validate() error {
 		return fmt.Errorf("unsupported storage type: %s", s.StorageType)
 	}
 
-	if s.GrpcPort == "" {
+	if s.GrpcPort == 0 {
 		return fmt.Errorf("gRPC port is required")
 	}
 
-	if s.MetricsPort == "" {
+	if s.MetricsPort == 0 {
 		return fmt.Errorf("metrics port is required")
 	}
 
