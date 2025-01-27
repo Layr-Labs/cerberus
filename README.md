@@ -60,17 +60,19 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
+   --admin-port value               Port for the admin server (default: 50052) [$ADMIN_PORT]
    --aws-access-key-id value        AWS access key ID [$AWS_ACCESS_KEY_ID]
    --aws-authentication-mode value  AWS authentication mode - supported modes: environment, specified (default: "environment") [$AWS_AUTHENTICATION_MODE]
    --aws-profile value              AWS profile (default: "default") [$AWS_PROFILE]
    --aws-region value               AWS region (default: "us-east-2") [$AWS_REGION]
    --aws-secret-access-key value    AWS secret access key [$AWS_SECRET_ACCESS_KEY]
+   --enable-admin                   Enable the admin server (default: false) [$ENABLE_ADMIN]
    --gcp-project-id value           Project ID for Google Cloud Platform [$GCP_PROJECT_ID]
-   --grpc-port value                Port for the gRPC server (default: "50051") [$GRPC_PORT]
+   --grpc-port value                Port for the gRPC server (default: 50051) [$GRPC_PORT]
    --keystore-dir value             Directory where the keystore files are stored (default: "./data/keystore") [$KEYSTORE_DIR]
    --log-format value               Log format - supported formats: text, json (default: "text") [$LOG_FORMAT]
    --log-level value                Log level - supported levels: debug, info, warn, error (default: "info") [$LOG_LEVEL]
-   --metrics-port value             Port for the metrics server (default: "9091") [$METRICS_PORT]
+   --metrics-port value             Port for the metrics server (default: 9091) [$METRICS_PORT]
    --postgres-database-url value    Postgres database URL (default: "postgres://user:password@localhost:5432/cerberus?sslmode=disable") [$POSTGRES_DATABASE_URL]
    --storage-type value             Storage type - supported types: filesystem, aws-secret-manager (default: "filesystem") [$STORAGE_TYPE]
    --tls-ca-cert value              TLS CA certificate [$TLS_CA_CERT]
@@ -79,7 +81,7 @@ GLOBAL OPTIONS:
    --version, -v                    print the version
 
 COPYRIGHT:
-   (c) 2025 EigenLabs
+   (c) 2025 Eigen Labs
 ```
 
 ### Storage Backend
@@ -171,6 +173,8 @@ import (
     "google.golang.org/grpc/credentials"
 )
 
+const SIGNER_API_KEY = "<API-KEY>"
+
 func main() {
     creds, err := credentials.NewClientTLSFromFile("server.crt", "")
     if err != nil {
@@ -193,6 +197,9 @@ func main() {
         Password:  "p@$$w0rd",
         Data:      []byte{0x01, 0x02, 0x03},
     }
+
+        // Pass the API key to the signer client
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", SIGNER_API_KEY)
     resp, err := c.SignGeneric(ctx, req)
     if err != nil {
         log.Fatalf("could not sign: %v", err)
