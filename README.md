@@ -198,7 +198,7 @@ func main() {
         Data:      []byte{0x01, 0x02, 0x03},
     }
 
-        // Pass the API key to the signer client
+    // Pass the API key to the signer client
     ctx = metadata.AppendToOutgoingContext(ctx, "authorization", SIGNER_API_KEY)
     resp, err := c.SignGeneric(ctx, req)
     if err != nil {
